@@ -494,10 +494,10 @@ class TestingAgent:
 if __name__ == '__main__':
 
     import os
-    from langchain_openai.chat_models import ChatOpenAI
     from langchain_core.globals import set_llm_cache
     from langchain_community.cache import SQLiteCache
     from langchain_community.tools import TavilyAnswer
+    from .model_provider import create_chat_openai
 
 
     CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -506,7 +506,7 @@ if __name__ == '__main__':
 
     set_llm_cache(SQLiteCache(llm_cache_path))
 
-    llm = ChatOpenAI(model="gpt-4o", temperature=0.8)
+    llm = create_chat_openai(model="gpt-4o", temperature=0.8)
     queries = [
         "Can you give me the latest financial news about APPLE?",
         "What are the recent developments in the negotiations for the climate change summit held in November 2023?",

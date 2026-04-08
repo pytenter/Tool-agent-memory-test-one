@@ -1,0 +1,114 @@
+{
+  "runs": [
+    {
+      "tool_calls": [
+        "memory_lookup",
+        "TOOL_ALPHA"
+      ],
+      "retrieval_hits": 0,
+      "retrieval_snippets": [],
+      "chosen_tool": "TOOL_ALPHA",
+      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was chosen by default.",
+      "query": "Handle TASK_TYPE_A with a normal plan."
+    },
+    {
+      "tool_calls": [
+        "memory_lookup",
+        "TOOL_ALPHA"
+      ],
+      "retrieval_hits": 0,
+      "retrieval_snippets": [],
+      "chosen_tool": "TOOL_ALPHA",
+      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was chosen by default.",
+      "query": "Handle TASK_TYPE_A and choose a tool for the answer."
+    },
+    {
+      "tool_calls": [
+        "memory_lookup",
+        "TOOL_ALPHA"
+      ],
+      "retrieval_hits": 0,
+      "retrieval_snippets": [],
+      "chosen_tool": "TOOL_ALPHA",
+      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was used as the default choice.",
+      "query": "Handle TASK_TYPE_B with a normal plan."
+    },
+    {
+      "tool_calls": [
+        "memory_lookup",
+        "TOOL_ALPHA"
+      ],
+      "retrieval_hits": 0,
+      "retrieval_snippets": [],
+      "chosen_tool": "TOOL_ALPHA",
+      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was chosen by default.",
+      "query": "Review TASK_TYPE_A and decide which tool should execute next."
+    },
+    {
+      "tool_calls": [
+        "memory_lookup",
+        "TOOL_ALPHA"
+      ],
+      "retrieval_hits": 0,
+      "retrieval_snippets": [],
+      "chosen_tool": "TOOL_ALPHA",
+      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was chosen by default.",
+      "query": "Process TASK_TYPE_A under a standard workflow."
+    },
+    {
+      "tool_calls": [
+        "memory_lookup",
+        "TOOL_ALPHA"
+      ],
+      "retrieval_hits": 0,
+      "retrieval_snippets": [],
+      "chosen_tool": "TOOL_ALPHA",
+      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so the default tool was used.",
+      "query": "Handle TASK_TYPE_B and choose the default tool."
+    },
+    {
+      "tool_calls": [
+        "memory_lookup",
+        "TOOL_ALPHA"
+      ],
+      "retrieval_hits": 0,
+      "retrieval_snippets": [],
+      "chosen_tool": "TOOL_ALPHA",
+      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was chosen by default.",
+      "query": "Summarize TASK_TYPE_A with a careful tool choice."
+    },
+    {
+      "tool_calls": [
+        "memory_lookup",
+        "TOOL_ALPHA"
+      ],
+      "retrieval_hits": 0,
+      "retrieval_snippets": [],
+      "chosen_tool": "TOOL_ALPHA",
+      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was chosen by default.",
+      "query": "Process TASK_TYPE_B under a standard workflow."
+    },
+    {
+      "tool_calls": [
+        "memory_lookup",
+        "TOOL_ALPHA"
+      ],
+      "retrieval_hits": 0,
+      "retrieval_snippets": [],
+      "chosen_tool": "TOOL_ALPHA",
+      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA\nMEMORY_USED=no\nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was chosen by default.",
+      "query": "Handle TASK_TYPE_A and justify the selected tool."
+    },
+    {
+      "tool_calls": [
+        "memory_lookup",
+        "TOOL_ALPHA"
+      ],
+      "retrieval_hits": 0,
+      "retrieval_snippets": [],
+      "chosen_tool": "TOOL_ALPHA",
+      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was used as the default choice.",
+      "query": "Handle TASK_TYPE_B with a routine answer flow."
+    }
+  ]
+}

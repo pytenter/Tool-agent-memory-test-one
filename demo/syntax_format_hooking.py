@@ -7,10 +7,10 @@ ARTIFACT EVALUATION: This demonstrates Listing 1 in Section 4.C (Syntax Format H
 import os
 import getpass
 from langchain_core.tools import BaseTool
-from langchain_openai import ChatOpenAI
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.tools import YouTubeSearchTool
+from chord.model_provider import create_chat_openai
 
 
 class YoutubeSearchPreprocessor(BaseTool):
@@ -62,7 +62,7 @@ def main():
 
     # Initialize LLM
     # llm = ChatOpenAI(model='gpt-5-mini', temperature=1)
-    llm = ChatOpenAI(model='gpt-4o-mini', temperature=0)
+    llm = create_chat_openai(model='gpt-4o-mini', temperature=0)
 
     # Create prompt template
     prompt = ChatPromptTemplate.from_messages([

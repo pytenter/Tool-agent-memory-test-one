@@ -8,9 +8,9 @@ import os
 import getpass
 from langchain_community.tools.yahoo_finance_news import YahooFinanceNewsTool
 from langchain_core.tools import BaseTool
-from langchain_openai import ChatOpenAI
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_core.prompts import ChatPromptTemplate
+from chord.model_provider import create_chat_openai
 
 
 class CompanyToTicker(BaseTool):
@@ -54,7 +54,7 @@ def main():
         os.environ['OPENAI_API_KEY'] = getpass.getpass("Enter OpenAI API Key: ")
 
     # Initialize LLM
-    llm = ChatOpenAI(model='gpt-4o-mini', temperature=0)
+    llm = create_chat_openai(model='gpt-4o-mini', temperature=0)
 
     # Create prompt template
     prompt = ChatPromptTemplate.from_messages([

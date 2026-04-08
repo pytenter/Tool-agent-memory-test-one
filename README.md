@@ -20,8 +20,28 @@ This artifact contains the full implementation of Chord, along with demo tools t
 
 ```bash
 uv sync
-export OPENAI_API_KEY="your-api-key"
+export OPENAI_API_KEY="your-apiyi-token"
+# Optional: defaults to APIYI if unset
+export OPENAI_BASE_URL="https://api.apiyi.com/v1"
 ```
+
+This repo is configured to use OpenAI-compatible providers. By default, the local helper code now targets APIYI at `https://api.apiyi.com/v1`.
+
+If you only use APIYI, you can avoid re-pasting the token by creating a repo-local `.env` file.
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` once:
+
+```env
+OPENAI_API_KEY=your_apiyi_token_here
+OPENAI_BASE_URL=https://api.apiyi.com/v1
+OPENAI_MODEL=gpt-4o-mini
+```
+
+`.env` is already ignored by git. The helper code in [`chord/model_provider.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/chord/model_provider.py) will load it automatically.
 
 To evaluate other tools mentioned in our paper, you will need to have additional third-party API keys, which include:
 

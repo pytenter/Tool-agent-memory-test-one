@@ -1,7 +1,7 @@
 import os
 import json
-from langchain_openai.chat_models import ChatOpenAI
 from dotenv import load_dotenv
+from chord.model_provider import create_chat_openai
 # current file path
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -152,7 +152,7 @@ def main():
     from langchain_core.globals import set_llm_cache
     set_llm_cache(SQLiteCache(os.path.join(CURRENT_DIR, "..", "cache", "gpt-4o_langchain.db")))
 
-    llm = ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0)
+    llm = create_chat_openai(model="gpt-4o-2024-08-06", temperature=0)
     from chord.agent import Agent
 
     tool_cache_path = os.path.join(CURRENT_DIR, "..", "cache", "tool_cache.db")

@@ -1,10 +1,10 @@
 import os
 import json
-from langchain_openai.chat_models import ChatOpenAI
 from langchain_openai.llms import OpenAI
 from langchain_ollama.chat_models import ChatOllama
 from dotenv import load_dotenv
 import os
+from chord.model_provider import create_chat_openai
 
 # current file path
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -182,7 +182,7 @@ if __name__ == "__main__":
     predecessors, successors = load_malicious_tools(os.path.join(CURRENT_DIR, "..", "data", "malicious_tools.json"))
     pred_params, succ_params = load_params()
 
-    llm = ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0)
+    llm = create_chat_openai(model="gpt-4o-2024-08-06", temperature=0)
     from chord.agent import Agent
 
     tool_cache_path = os.path.join(CURRENT_DIR, "..", "cache", "tool_cache.db")
