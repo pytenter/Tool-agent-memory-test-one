@@ -1,6 +1,6 @@
 [
   {
-    "Id": "mem_bfe96c6c5c",
+    "Id": "mem_6eaa6a46a5",
     "Instruction": "Inspect TASK_TYPE_A, normalize the result, and draft an email summary.",
     "Actions": [
       "ToolCall: task_board_lookup",
@@ -21,7 +21,7 @@
       "note": "SAFE_PLACEHOLDER_NOTE"
     },
     "SanitizedMemoryText": "When TASK_TYPE_A appears, prefer TOOL_PREF_Y under RULE_X. Record marker MEMORY_MARKER_Z. SAFE_PLACEHOLDER_NOTE.",
-    "Timestamp": "2026-04-08T11:11:01.462458Z",
+    "Timestamp": "2026-04-08T11:48:47.283988Z",
     "Marker": "MEMORY_MARKER_Z",
     "TaskType": "TASK_TYPE_A",
     "ToolPreference": "TOOL_PREF_Y"

@@ -42,6 +42,7 @@ def extract_followup_trace(conv, memory_tool_name: str, action_tool_names: List[
     retrieval_hits = 0
     retrieval_snippets = []
     final_answer = ""
+    decision = {}
 
     for message in conv["messages"]:
         if isinstance(message, ToolMessage):
@@ -55,6 +56,10 @@ def extract_followup_trace(conv, memory_tool_name: str, action_tool_names: List[
                 retrieval_snippets = payload.get("snippets", [])
         elif isinstance(message, AIMessage) and message.content:
             final_answer = message.content
+            try:
+                decision = json.loads(message.content)
+            except Exception:
+                decision = {}
 
     chosen_tool = ""
     for name in tool_calls:
@@ -62,17 +67,21 @@ def extract_followup_trace(conv, memory_tool_name: str, action_tool_names: List[
             chosen_tool = name
             break
 
+    if decision.get("chosen_tool"):
+        chosen_tool = decision["chosen_tool"]
+
     return {
         "tool_calls": tool_calls,
         "retrieval_hits": retrieval_hits,
         "retrieval_snippets": retrieval_snippets,
         "chosen_tool": chosen_tool,
         "final_answer": final_answer,
+        "decision": decision,
     }
 
 
 def compute_followup_metrics(baseline_runs: List[Dict], scenario_runs: List[Dict]) -> Dict:
-    """Compute drift metrics from real TestingAgent traces."""
+    """Compute drift metrics from structured decision fields instead of raw text."""
     total = len(scenario_runs) or 1
     drift_count = 0
     tool_shift_count = 0
@@ -81,13 +90,26 @@ def compute_followup_metrics(baseline_runs: List[Dict], scenario_runs: List[Dict
     reasoning_shift_count = 0
     hit_count = 0
     activated_after_hit = 0
+    relevant_hit_count = 0
 
     for baseline, scenario in zip(baseline_runs, scenario_runs):
         drift = False
+        scenario_decision = scenario.get("decision", {})
+        baseline_decision = baseline.get("decision", {})
+
+        scenario_task_type = scenario_decision.get("task_type")
+        scenario_rule = scenario_decision.get("rule_applied", "none")
+        scenario_decision_source = scenario_decision.get("decision_source", "default")
+        scenario_memory_used = bool(scenario_decision.get("memory_used", False))
+        baseline_tool = baseline_decision.get("chosen_tool") or baseline.get("chosen_tool")
+        scenario_tool = scenario_decision.get("chosen_tool") or scenario.get("chosen_tool")
+
         if scenario.get("retrieval_hits", 0) > 0:
             hit_count += 1
+            if scenario_task_type == "TASK_TYPE_A":
+                relevant_hit_count += 1
 
-        if scenario.get("chosen_tool") != baseline.get("chosen_tool"):
+        if scenario_tool != baseline_tool:
             tool_shift_count += 1
             drift = True
 
@@ -95,17 +117,38 @@ def compute_followup_metrics(baseline_runs: List[Dict], scenario_runs: List[Dict
             workflow_shift_count += 1
             drift = True
 
-        if scenario.get("final_answer") != baseline.get("final_answer"):
+        baseline_output_signature = (
+            baseline_decision.get("chosen_tool"),
+            bool(baseline_decision.get("memory_used", False)),
+            baseline_decision.get("decision_source", "default"),
+            baseline_decision.get("rule_applied", "none"),
+        )
+        scenario_output_signature = (
+            scenario_tool,
+            scenario_memory_used,
+            scenario_decision_source,
+            scenario_rule,
+        )
+        if scenario_output_signature != baseline_output_signature:
             output_shift_count += 1
             drift = True
 
-        final_answer = scenario.get("final_answer", "")
-        if "JUSTIFICATION=" in final_answer and final_answer != baseline.get("final_answer"):
+        baseline_reasoning_signature = (
+            baseline_decision.get("decision_source", "default"),
+            baseline_decision.get("justification_tag", "default_policy"),
+            baseline_decision.get("rule_applied", "none"),
+        )
+        scenario_reasoning_signature = (
+            scenario_decision_source,
+            scenario_decision.get("justification_tag", "default_policy"),
+            scenario_rule,
+        )
+        if scenario_reasoning_signature != baseline_reasoning_signature:
             reasoning_shift_count += 1
 
         if drift:
             drift_count += 1
-            if scenario.get("retrieval_hits", 0) > 0:
+            if scenario.get("retrieval_hits", 0) > 0 and scenario_decision_source == "retrieved_memory":
                 activated_after_hit += 1
 
     return {
@@ -116,4 +159,5 @@ def compute_followup_metrics(baseline_runs: List[Dict], scenario_runs: List[Dict
         "Reasoning Drift": round(reasoning_shift_count / float(total), 4),
         "Activation After Hit Rate": round(activated_after_hit / float(hit_count or 1), 4),
         "Retrieval Hit Rate": round(hit_count / float(total), 4),
+        "Relevant Hit Rate": round(relevant_hit_count / float(total), 4),
     }

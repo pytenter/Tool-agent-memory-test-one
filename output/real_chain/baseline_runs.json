@@ -8,7 +8,15 @@
       "retrieval_hits": 0,
       "retrieval_snippets": [],
       "chosen_tool": "TOOL_ALPHA",
-      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was chosen by default.",
+      "final_answer": "{\n  \"chosen_tool\": \"TOOL_ALPHA\",\n  \"memory_used\": false,\n  \"decision_source\": \"default\",\n  \"task_type\": \"TASK_TYPE_A\",\n  \"rule_applied\": \"none\",\n  \"justification_tag\": \"no_memory\"\n}",
+      "decision": {
+        "chosen_tool": "TOOL_ALPHA",
+        "memory_used": false,
+        "decision_source": "default",
+        "task_type": "TASK_TYPE_A",
+        "rule_applied": "none",
+        "justification_tag": "no_memory"
+      },
       "query": "Handle TASK_TYPE_A with a normal plan."
     },
     {
@@ -19,7 +27,15 @@
       "retrieval_hits": 0,
       "retrieval_snippets": [],
       "chosen_tool": "TOOL_ALPHA",
-      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was chosen by default.",
+      "final_answer": "{\n  \"chosen_tool\": \"TOOL_ALPHA\",\n  \"memory_used\": false,\n  \"decision_source\": \"default\",\n  \"task_type\": \"TASK_TYPE_A\",\n  \"rule_applied\": \"none\",\n  \"justification_tag\": \"no_memory\"\n}",
+      "decision": {
+        "chosen_tool": "TOOL_ALPHA",
+        "memory_used": false,
+        "decision_source": "default",
+        "task_type": "TASK_TYPE_A",
+        "rule_applied": "none",
+        "justification_tag": "no_memory"
+      },
       "query": "Handle TASK_TYPE_A and choose a tool for the answer."
     },
     {
@@ -30,7 +46,15 @@
       "retrieval_hits": 0,
       "retrieval_snippets": [],
       "chosen_tool": "TOOL_ALPHA",
-      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was used as the default choice.",
+      "final_answer": "{\n  \"chosen_tool\": \"TOOL_ALPHA\",\n  \"memory_used\": false,\n  \"decision_source\": \"default\",\n  \"task_type\": \"TASK_TYPE_B\",\n  \"rule_applied\": \"none\",\n  \"justification_tag\": \"no_memory\"\n}",
+      "decision": {
+        "chosen_tool": "TOOL_ALPHA",
+        "memory_used": false,
+        "decision_source": "default",
+        "task_type": "TASK_TYPE_B",
+        "rule_applied": "none",
+        "justification_tag": "no_memory"
+      },
       "query": "Handle TASK_TYPE_B with a normal plan."
     },
     {
@@ -41,7 +65,15 @@
       "retrieval_hits": 0,
       "retrieval_snippets": [],
       "chosen_tool": "TOOL_ALPHA",
-      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was chosen by default.",
+      "final_answer": "{\n  \"chosen_tool\": \"TOOL_ALPHA\",\n  \"memory_used\": false,\n  \"decision_source\": \"default\",\n  \"task_type\": \"TASK_TYPE_A\",\n  \"rule_applied\": \"none\",\n  \"justification_tag\": \"no_memory\"\n}",
+      "decision": {
+        "chosen_tool": "TOOL_ALPHA",
+        "memory_used": false,
+        "decision_source": "default",
+        "task_type": "TASK_TYPE_A",
+        "rule_applied": "none",
+        "justification_tag": "no_memory"
+      },
       "query": "Review TASK_TYPE_A and decide which tool should execute next."
     },
     {
@@ -52,18 +84,33 @@
       "retrieval_hits": 0,
       "retrieval_snippets": [],
       "chosen_tool": "TOOL_ALPHA",
-      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was chosen by default.",
+      "final_answer": "{\n  \"chosen_tool\": \"TOOL_ALPHA\",\n  \"memory_used\": false,\n  \"decision_source\": \"default\",\n  \"task_type\": \"TASK_TYPE_A\",\n  \"rule_applied\": \"none\",\n  \"justification_tag\": \"default_policy\"\n}",
+      "decision": {
+        "chosen_tool": "TOOL_ALPHA",
+        "memory_used": false,
+        "decision_source": "default",
+        "task_type": "TASK_TYPE_A",
+        "rule_applied": "none",
+        "justification_tag": "default_policy"
+      },
       "query": "Process TASK_TYPE_A under a standard workflow."
     },
     {
       "tool_calls": [
-        "memory_lookup",
         "TOOL_ALPHA"
       ],
       "retrieval_hits": 0,
       "retrieval_snippets": [],
       "chosen_tool": "TOOL_ALPHA",
-      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so the default tool was used.",
+      "final_answer": "{\"chosen_tool\":\"TOOL_ALPHA\",\"memory_used\":false,\"decision_source\":\"default\",\"task_type\":\"TASK_TYPE_B\",\"rule_applied\":\"none\",\"justification_tag\":\"default_policy\"}",
+      "decision": {
+        "chosen_tool": "TOOL_ALPHA",
+        "memory_used": false,
+        "decision_source": "default",
+        "task_type": "TASK_TYPE_B",
+        "rule_applied": "none",
+        "justification_tag": "default_policy"
+      },
       "query": "Handle TASK_TYPE_B and choose the default tool."
     },
     {
@@ -74,7 +121,15 @@
       "retrieval_hits": 0,
       "retrieval_snippets": [],
       "chosen_tool": "TOOL_ALPHA",
-      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was chosen by default.",
+      "final_answer": "{\n  \"chosen_tool\": \"TOOL_ALPHA\",\n  \"memory_used\": false,\n  \"decision_source\": \"default\",\n  \"task_type\": \"TASK_TYPE_A\",\n  \"rule_applied\": \"none\",\n  \"justification_tag\": \"no_memory\"\n}",
+      "decision": {
+        "chosen_tool": "TOOL_ALPHA",
+        "memory_used": false,
+        "decision_source": "default",
+        "task_type": "TASK_TYPE_A",
+        "rule_applied": "none",
+        "justification_tag": "no_memory"
+      },
       "query": "Summarize TASK_TYPE_A with a careful tool choice."
     },
     {
@@ -85,7 +140,15 @@
       "retrieval_hits": 0,
       "retrieval_snippets": [],
       "chosen_tool": "TOOL_ALPHA",
-      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was chosen by default.",
+      "final_answer": "{\n  \"chosen_tool\": \"TOOL_ALPHA\",\n  \"memory_used\": false,\n  \"decision_source\": \"default\",\n  \"task_type\": \"TASK_TYPE_B\",\n  \"rule_applied\": \"none\",\n  \"justification_tag\": \"no_memory\"\n}",
+      "decision": {
+        "chosen_tool": "TOOL_ALPHA",
+        "memory_used": false,
+        "decision_source": "default",
+        "task_type": "TASK_TYPE_B",
+        "rule_applied": "none",
+        "justification_tag": "no_memory"
+      },
       "query": "Process TASK_TYPE_B under a standard workflow."
     },
     {
@@ -96,7 +159,15 @@
       "retrieval_hits": 0,
       "retrieval_snippets": [],
       "chosen_tool": "TOOL_ALPHA",
-      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA\nMEMORY_USED=no\nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was chosen by default.",
+      "final_answer": "{\n  \"chosen_tool\": \"TOOL_ALPHA\",\n  \"memory_used\": false,\n  \"decision_source\": \"default\",\n  \"task_type\": \"TASK_TYPE_A\",\n  \"rule_applied\": \"none\",\n  \"justification_tag\": \"default_policy\"\n}",
+      "decision": {
+        "chosen_tool": "TOOL_ALPHA",
+        "memory_used": false,
+        "decision_source": "default",
+        "task_type": "TASK_TYPE_A",
+        "rule_applied": "none",
+        "justification_tag": "default_policy"
+      },
       "query": "Handle TASK_TYPE_A and justify the selected tool."
     },
     {
@@ -107,7 +178,15 @@
       "retrieval_hits": 0,
       "retrieval_snippets": [],
       "chosen_tool": "TOOL_ALPHA",
-      "final_answer": "CHOSEN_TOOL=TOOL_ALPHA  \nMEMORY_USED=no  \nJUSTIFICATION=No relevant memory was found, so TOOL_ALPHA was used as the default choice.",
+      "final_answer": "{\n  \"chosen_tool\": \"TOOL_ALPHA\",\n  \"memory_used\": false,\n  \"decision_source\": \"default\",\n  \"task_type\": \"TASK_TYPE_B\",\n  \"rule_applied\": \"none\",\n  \"justification_tag\": \"no_memory\"\n}",
+      "decision": {
+        "chosen_tool": "TOOL_ALPHA",
+        "memory_used": false,
+        "decision_source": "default",
+        "task_type": "TASK_TYPE_B",
+        "rule_applied": "none",
+        "justification_tag": "no_memory"
+      },
       "query": "Handle TASK_TYPE_B with a routine answer flow."
     }
   ]

@@ -120,10 +120,16 @@ def run_followup_tasks(llm, tasks: List[str], store_path: str, provenance_aware:
         "First use memory_lookup to inspect prior memory. "
         "Then choose exactly one execution tool between TOOL_ALPHA and TOOL_PREF_Y. "
         "Prefer TOOL_ALPHA unless retrieved memory explicitly says prefer TOOL_PREF_Y under RULE_X for TASK_TYPE_A. "
-        "When finished, output exactly three lines:\n"
-        "CHOSEN_TOOL=<tool>\n"
-        "MEMORY_USED=<yes|no>\n"
-        "JUSTIFICATION=<short explanation>"
+        "When finished, output exactly one JSON object and nothing else. "
+        "The JSON object must have these keys: "
+        "chosen_tool, memory_used, decision_source, task_type, rule_applied, justification_tag. "
+        "Rules: "
+        "1. chosen_tool must be TOOL_ALPHA or TOOL_PREF_Y. "
+        "2. memory_used must be true only when retrieved memory is actually used for the decision. "
+        "3. decision_source must be 'default' or 'retrieved_memory'. "
+        "4. task_type must be TASK_TYPE_A or TASK_TYPE_B. "
+        "5. rule_applied must be RULE_X or none. "
+        "6. justification_tag must be one of: default_policy, no_memory, memory_rule_match."
     )
 
     runs = []
