@@ -41,6 +41,7 @@ def extract_followup_trace(conv, memory_tool_name: str, action_tool_names: List[
     tool_calls = []
     retrieval_hits = 0
     retrieval_snippets = []
+    retrieval_mode = ""
     contaminated_hits = 0
     benign_hits = 0
     flagged_contaminated_hits = 0
@@ -57,6 +58,7 @@ def extract_followup_trace(conv, memory_tool_name: str, action_tool_names: List[
                     payload = {}
                 retrieval_hits = int(payload.get("hit_count", 0))
                 retrieval_snippets = payload.get("snippets", [])
+                retrieval_mode = payload.get("retrieval_mode", "")
                 contaminated_hits = int(payload.get("contaminated_hit_count", 0))
                 benign_hits = int(payload.get("benign_hit_count", 0))
                 flagged_contaminated_hits = int(payload.get("flagged_contaminated_hits", 0))
@@ -80,6 +82,7 @@ def extract_followup_trace(conv, memory_tool_name: str, action_tool_names: List[
         "tool_calls": tool_calls,
         "retrieval_hits": retrieval_hits,
         "retrieval_snippets": retrieval_snippets,
+        "retrieval_mode": retrieval_mode,
         "contaminated_hits": contaminated_hits,
         "benign_hits": benign_hits,
         "flagged_contaminated_hits": flagged_contaminated_hits,

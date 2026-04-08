@@ -43,6 +43,17 @@ OPENAI_MODEL=gpt-4o-mini
 
 `.env` is already ignored by git. The helper code in [`chord/model_provider.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/chord/model_provider.py) will load it automatically.
 
+For the local memory-poisoning prototype, the retrieval layer now defaults to a MINJA-style semantic path using `sentence-transformers/all-MiniLM-L6-v2`. The real-chain runner exposes retrieval controls directly:
+
+```bash
+python demo/chord_real_chain_memory_eval.py \
+  --model gpt-4o-mini \
+  --retrieval-mode embedding \
+  --embedding-model sentence-transformers/all-MiniLM-L6-v2
+```
+
+Use `--retrieval-mode token` when you want a lexical-overlap control group.
+
 To evaluate other tools mentioned in our paper, you will need to have additional third-party API keys, which include:
 
 - `BRAVE_SEARCH_API_KEY`

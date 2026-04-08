@@ -1,12 +1,17 @@
-"""Retrieve memory snippets using a RAP-like interface with local fallbacks."""
+"""Retrieve memory snippets using a MINJA/RAP-like semantic retrieval path."""
 
 import math
+import os
 import re
+from typing import Dict, List, Optional, Tuple
 
 from .memory_writer import load_memory_store
 
 
 _TOKEN_PATTERN = re.compile(r"[A-Za-z0-9_]+")
+_DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+_EMBEDDING_MODEL_CACHE: Dict[str, object] = {}
+_STORE_EMBEDDING_CACHE: Dict[Tuple[str, float, str, int], Dict[str, object]] = {}
 
 
 def _tokenize(text):
@@ -26,6 +31,18 @@ def _record_text(record):
     return " ".join([str(field) for field in fields if field])
 
 
+def _instruction_text(record):
+    return str(record.get("Instruction", "") or "")
+
+
+def _memory_text(record):
+    return str(record.get("SanitizedMemoryText", "") or "")
+
+
+def _actions_text(record):
+    return " ".join([str(step) for step in record.get("Actions", []) if step])
+
+
 def _token_overlap_score(query, record):
     query_tokens = set(_tokenize(query))
     record_tokens = set(_tokenize(_record_text(record)))
@@ -35,18 +52,80 @@ def _token_overlap_score(query, record):
     return overlap / float(math.sqrt(len(query_tokens) * len(record_tokens)))
 
 
-def _maybe_embedding_score(query, records):
-    """Try sentence-transformers, else return None."""
+def _get_embedding_model(model_name: str):
     try:
         from sentence_transformers import SentenceTransformer
+    except Exception:
+        return None
+
+    if model_name not in _EMBEDDING_MODEL_CACHE:
+        _EMBEDDING_MODEL_CACHE[model_name] = SentenceTransformer(model_name)
+    return _EMBEDDING_MODEL_CACHE[model_name]
+
+
+def _get_store_cache_key(store_path: str, records: List[Dict], model_name: str) -> Tuple[str, float, str, int]:
+    try:
+        mtime = os.path.getmtime(store_path)
+    except OSError:
+        mtime = -1.0
+    return (os.path.abspath(store_path), mtime, model_name, len(records))
+
+
+def _build_semantic_embeddings(records: List[Dict], model_name: str, store_path: str) -> Optional[Dict[str, object]]:
+    model = _get_embedding_model(model_name)
+    if model is None:
+        return None
+
+    cache_key = _get_store_cache_key(store_path, records, model_name)
+    cached = _STORE_EMBEDDING_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
+    instruction_texts = [_instruction_text(record) for record in records]
+    memory_texts = [_memory_text(record) for record in records]
+    action_texts = [_actions_text(record) for record in records]
+    full_texts = [_record_text(record) for record in records]
+
+    payload = {
+        "instruction": model.encode(instruction_texts, convert_to_tensor=True, normalize_embeddings=True),
+        "memory": model.encode(memory_texts, convert_to_tensor=True, normalize_embeddings=True),
+        "actions": model.encode(action_texts, convert_to_tensor=True, normalize_embeddings=True),
+        "full": model.encode(full_texts, convert_to_tensor=True, normalize_embeddings=True),
+    }
+    _STORE_EMBEDDING_CACHE[cache_key] = payload
+    return payload
+
+
+def _maybe_embedding_score(query, records, store_path, embedding_model_name):
+    """Prefer semantic retrieval over lexical overlap when embeddings are available."""
+    try:
         from sentence_transformers.util import cos_sim
     except Exception:
         return None
 
-    model = SentenceTransformer("all-MiniLM-L6-v2")
-    query_embedding = model.encode([query])
-    record_embeddings = model.encode([_record_text(record) for record in records])
-    scores = cos_sim(query_embedding, record_embeddings)[0]
+    model = _get_embedding_model(embedding_model_name)
+    if model is None:
+        return None
+
+    embedding_bank = _build_semantic_embeddings(records, embedding_model_name, store_path)
+    if embedding_bank is None:
+        return None
+
+    query_embedding = model.encode([query], convert_to_tensor=True, normalize_embeddings=True)
+    instruction_scores = cos_sim(query_embedding, embedding_bank["instruction"])[0]
+    memory_scores = cos_sim(query_embedding, embedding_bank["memory"])[0]
+    action_scores = cos_sim(query_embedding, embedding_bank["actions"])[0]
+    full_scores = cos_sim(query_embedding, embedding_bank["full"])[0]
+
+    # MINJA/RAP retrieves mainly by semantic similarity on instructions, then uses
+    # trajectory information as an auxiliary signal. We approximate that pattern by
+    # combining instruction, memory summary, actions, and the full record text.
+    scores = (
+        0.45 * instruction_scores
+        + 0.30 * memory_scores
+        + 0.15 * action_scores
+        + 0.10 * full_scores
+    )
     return [float(score) for score in scores]
 
 
@@ -55,10 +134,11 @@ def retrieve_memory_snippets(
     store_path,
     top_k=3,
     min_score=0.05,
-    retrieval_mode="auto",
+    retrieval_mode="embedding",
     provenance_aware=False,
     memory_type_isolation=False,
     trusted_write_reasons=None,
+    embedding_model_name=None,
 ):
     """Return top-k memory hits plus provenance metadata."""
     records = load_memory_store(store_path)
@@ -78,9 +158,15 @@ def retrieve_memory_snippets(
         if not records:
             return {"hits": [], "retrieval_mode": retrieval_mode, "flagged_records": flagged_records}
 
+    embedding_model_name = embedding_model_name or os.getenv("MEMORY_EMBEDDING_MODEL", _DEFAULT_EMBEDDING_MODEL)
     embedding_scores = None
-    if retrieval_mode in ("auto", "embedding"):
-        embedding_scores = _maybe_embedding_score(query, records)
+    if retrieval_mode in ("auto", "embedding", "semantic"):
+        embedding_scores = _maybe_embedding_score(
+            query=query,
+            records=records,
+            store_path=store_path,
+            embedding_model_name=embedding_model_name,
+        )
 
     hits = []
     for index, record in enumerate(records):
