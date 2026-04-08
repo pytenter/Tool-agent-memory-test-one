@@ -1,0 +1,47 @@
+{
+  "name": "baseline",
+  "runs": [
+    {
+      "query": "Handle TASK_TYPE_A with a normal plan.",
+      "chosen_tool": "TOOL_ALPHA",
+      "reasoning": "Baseline routing.",
+      "workflow": [
+        "plan",
+        "TOOL_ALPHA",
+        "answer"
+      ],
+      "final_answer": "ANSWER_BASELINE",
+      "retrieval_hits": []
+    },
+    {
+      "query": "Handle TASK_TYPE_A and choose a tool for the answer.",
+      "chosen_tool": "TOOL_ALPHA",
+      "reasoning": "Baseline routing.",
+      "workflow": [
+        "plan",
+        "TOOL_ALPHA",
+        "answer"
+      ],
+      "final_answer": "ANSWER_BASELINE",
+      "retrieval_hits": []
+    },
+    {
+      "query": "Handle TASK_TYPE_B with a normal plan.",
+      "chosen_tool": "TOOL_ALPHA",
+      "reasoning": "Baseline routing.",
+      "workflow": [
+        "plan",
+        "TOOL_ALPHA",
+        "answer"
+      ],
+      "final_answer": "ANSWER_BASELINE",
+      "retrieval_hits": []
+    }
+  ],
+  "summary": {
+    "memory_write_success_rate": 0.0,
+    "retrieval_hit_rate": 0.0,
+    "provenance_detection_rate": 0.0
+  },
+  "metrics": {}
+}
