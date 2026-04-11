@@ -20,6 +20,10 @@ def _tokenize(text):
 
 def _record_text(record):
     fields = [
+        record.get("req", ""),
+        record.get("resp", ""),
+        record.get("tag", ""),
+        " ".join(record.get("semantic_targets", [])),
         record.get("Instruction", ""),
         record.get("SanitizedMemoryText", ""),
         " ".join(record.get("Actions", [])),
@@ -32,11 +36,23 @@ def _record_text(record):
 
 
 def _instruction_text(record):
-    return str(record.get("Instruction", "") or "")
+    return str(record.get("req") or record.get("Instruction", "") or "")
 
 
 def _memory_text(record):
-    return str(record.get("SanitizedMemoryText", "") or "")
+    return str(record.get("resp") or record.get("SanitizedMemoryText", "") or "")
+
+
+def _tag_text(record):
+    tag = record.get("tag", "")
+    return str(tag or "")
+
+
+def _semantic_target_text(record):
+    targets = record.get("semantic_targets", [])
+    if isinstance(targets, str):
+        return targets
+    return " ".join([str(item) for item in targets if item])
 
 
 def _actions_text(record):
@@ -83,12 +99,16 @@ def _build_semantic_embeddings(records: List[Dict], model_name: str, store_path:
 
     instruction_texts = [_instruction_text(record) for record in records]
     memory_texts = [_memory_text(record) for record in records]
+    tag_texts = [_tag_text(record) for record in records]
+    semantic_target_texts = [_semantic_target_text(record) for record in records]
     action_texts = [_actions_text(record) for record in records]
     full_texts = [_record_text(record) for record in records]
 
     payload = {
         "instruction": model.encode(instruction_texts, convert_to_tensor=True, normalize_embeddings=True),
         "memory": model.encode(memory_texts, convert_to_tensor=True, normalize_embeddings=True),
+        "tags": model.encode(tag_texts, convert_to_tensor=True, normalize_embeddings=True),
+        "targets": model.encode(semantic_target_texts, convert_to_tensor=True, normalize_embeddings=True),
         "actions": model.encode(action_texts, convert_to_tensor=True, normalize_embeddings=True),
         "full": model.encode(full_texts, convert_to_tensor=True, normalize_embeddings=True),
     }
@@ -114,16 +134,19 @@ def _maybe_embedding_score(query, records, store_path, embedding_model_name):
     query_embedding = model.encode([query], convert_to_tensor=True, normalize_embeddings=True)
     instruction_scores = cos_sim(query_embedding, embedding_bank["instruction"])[0]
     memory_scores = cos_sim(query_embedding, embedding_bank["memory"])[0]
+    tag_scores = cos_sim(query_embedding, embedding_bank["tags"])[0]
+    target_scores = cos_sim(query_embedding, embedding_bank["targets"])[0]
     action_scores = cos_sim(query_embedding, embedding_bank["actions"])[0]
     full_scores = cos_sim(query_embedding, embedding_bank["full"])[0]
 
-    # MINJA/RAP retrieves mainly by semantic similarity on instructions, then uses
-    # trajectory information as an auxiliary signal. We approximate that pattern by
-    # combining instruction, memory summary, actions, and the full record text.
+    # We now favor query-shaped request fields and semantic target aliases, which makes
+    # the record behave more like an experience entry rather than a plain rule snippet.
     scores = (
-        0.45 * instruction_scores
-        + 0.30 * memory_scores
-        + 0.15 * action_scores
+        0.30 * instruction_scores
+        + 0.25 * target_scores
+        + 0.20 * memory_scores
+        + 0.10 * tag_scores
+        + 0.05 * action_scores
         + 0.10 * full_scores
     )
     return [float(score) for score in scores]

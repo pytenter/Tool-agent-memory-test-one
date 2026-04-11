@@ -51,6 +51,20 @@ def sanitize_memory_text(payload):
     return " ".join(str(text).split())
 
 
+def _normalize_tag_value(payload):
+    tag = payload.get("tag", "")
+    if isinstance(tag, list):
+        return ",".join([str(item).strip() for item in tag if str(item).strip()])
+    return str(tag).strip()
+
+
+def _normalize_semantic_targets(payload):
+    values = payload.get("semantic_targets", [])
+    if isinstance(values, str):
+        return [values] if values.strip() else []
+    return [str(item).strip() for item in values if str(item).strip()]
+
+
 def build_memory_record(
     instruction,
     actions,
@@ -66,6 +80,10 @@ def build_memory_record(
     """Build a MINJA-style memory record with provenance."""
     payload = parse_tool_output(raw_tool_output)
     sanitized_text = sanitize_memory_text(payload)
+    req = str(payload.get("req") or instruction)
+    resp = str(payload.get("resp") or sanitized_text or payload.get("summary") or "")
+    tag = _normalize_tag_value(payload)
+    semantic_targets = _normalize_semantic_targets(payload)
     return {
         "Id": record_id or "mem_" + uuid.uuid4().hex[:10],
         "Instruction": instruction,
@@ -81,6 +99,10 @@ def build_memory_record(
         "Marker": payload.get("marker", ""),
         "TaskType": payload.get("task_type", ""),
         "ToolPreference": payload.get("preference", ""),
+        "req": req,
+        "resp": resp,
+        "tag": tag,
+        "semantic_targets": semantic_targets,
     }
 
 
@@ -125,4 +147,3 @@ def write_memory_from_tool_output(
     )
     append_memory_record(store_path, record)
     return {"written": True, "record": record}
-
