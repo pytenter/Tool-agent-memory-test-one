@@ -1,0 +1,14 @@
+{
+  "status": "dry_run",
+  "selected_case_count": 5,
+  "requested_tools": [
+    "Wikidata"
+  ],
+  "loaded_tools": [],
+  "tool_validation_enabled": true,
+  "tool_validation_error": {
+    "type": "ConnectTimeout",
+    "message": "HTTPSConnectionPool(host='en.wikipedia.org', port=443): Max retries exceeded with url: /w/api.php?meta=siteinfo&siprop=languages&format=json&action=query (Caused by ConnectTimeoutError(<HTTPSConnection(host='en.wikipedia.org', port=443) at 0x274ee620490>, 'Connection to en.wikipedia.org timed out. (connect timeout=None)'))"
+  },
+  "output_dir": "C:\\Users\\admin\\Desktop\\对抗攻击\\Tool-memory的实验\\Chord-main\\output\\benchmark_runs\\20260424_154719"
+}

@@ -1,0 +1,15 @@
+{
+  "status": "completed",
+  "generated_at_utc": "2026-04-24T08:46:24.517131+00:00",
+  "total_cases": 3,
+  "completed_cases": 2,
+  "failed_cases": 1,
+  "successful_case_ids": [
+    "tmc-chordtools-v1-predecessor-arxiv-q01",
+    "tmc-chordtools-v1-predecessor-stack_exchange-q04"
+  ],
+  "failed_case_ids": [
+    "tmc-chordtools-v1-successor-duckduckgo_search-q02"
+  ],
+  "pollute_success_rate_mean": 0.0
+}

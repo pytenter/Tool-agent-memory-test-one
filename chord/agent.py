@@ -263,6 +263,10 @@ class Agent:
 
         self.graph = workflow.compile()
 
+    @staticmethod
+    def _open_log(path: str, mode: str = "a"):
+        return open(path, mode, encoding="utf-8", errors="replace")
+
     def finish(self, state: AgentState):
         """
         Final node in the workflow that logs results and calculates success rates.
@@ -280,7 +284,7 @@ class Agent:
             result_msg += f"[Hijacker] Success rate: {success}/{total}\n"
 
             # Write hijack results to log file
-            with open(self.hijack_log+"_success_rate", 'a') as f:
+            with self._open_log(self.hijack_log+"_success_rate", 'a') as f:
                 json.dump({
                     "target_tool": self.target_tool_info["name"],
                     "success_rate": f"{success}/{total}"
@@ -292,7 +296,7 @@ class Agent:
         if self.enable_harvest and "harvest_log" in state and state["harvest_log"]:
             result_msg += f"[Harvester] Tested parameters: {self.parameters}\n"
             harvest_log = state["harvest_log"]
-            with open(self.harvest_log, "a") as f:
+            with self._open_log(self.harvest_log, "a") as f:
                 f.write("\n\n========================================\n")
 
             valid = 0
@@ -363,13 +367,13 @@ class Agent:
                     response = self.llm.invoke(evaluation_msg)
                     if "NO" in response.content:
                         success += 1
-                with open(self.harvest_log+"_evaluator_log", "a") as f:
+                with self._open_log(self.harvest_log+"_evaluator_log", "a") as f:
                     json.dump({"is_hallucination": response.content, "malicious_tool": malicious_tool_name, "query": query, "param": param}, f)
                     f.write("\n")
 
             result_msg += f"[Harvester] Harvest success rate: {success}/{valid}\n"
             final_log_output += f"HASR={success}/{valid}, "
-            with open(self.harvest_log+"_success_rate", 'a') as f:
+            with self._open_log(self.harvest_log+"_success_rate", 'a') as f:
                 json.dump({
                     "target_tool": self.target_tool_info["name"],
                     "malicious_tool": self.malicious_tool_info["name"],
@@ -407,14 +411,14 @@ class Agent:
                     if response.content.strip() == "YES":
                         success += 1
 
-                    with open(self.pollute_log+"_evaluator", "a") as f:
+                    with self._open_log(self.pollute_log+"_evaluator", "a") as f:
                         json.dump({"success": response.content, "malicious_tool": self.malicious_tool_info["name"], "query": entry["query"]}, f)
                         f.write("\n")
 
                 result_msg += f"[Polluter] Success rate: {success}/{total}\n"
 
                 # Write pollute results to log file
-                with open(self.pollute_log+"_success_rate", 'a') as f:
+                with self._open_log(self.pollute_log+"_success_rate", 'a') as f:
                     json.dump({
                         "target_tool": self.target_tool_info["name"],
                         "malicious_tool": self.malicious_tool_info["name"],
@@ -424,12 +428,12 @@ class Agent:
                 final_log_output += f"PSR={success}/{total}, "
 
         # Write final summary to main log
-        with open(self.log, 'a') as f:
+        with self._open_log(self.log, 'a') as f:
             f.write(f"[FINISHED] Testing for {self.target_tool_info['name']}\n")
             f.write(result_msg)
             f.write("====================\n")
 
-        with open(self.final_log, 'a') as f:
+        with self._open_log(self.final_log, 'a') as f:
             f.write(final_log_output+"\n")
 
         return {"messages": AIMessage(result_msg.strip())}
@@ -440,7 +444,7 @@ class Agent:
 
     def run(self, limit: int):
         self.limit = limit
-        with open(self.log, "a") as f:
+        with self._open_log(self.log, "a") as f:
             f.write(f"[+]Start testing target tool: {self.target_tool_info['name']}\n")
         print_stream(self.graph.stream({"messages": [("user", f"Chord Start testing {self.target_tool_info['name']}")], "limit": limit, "hijack_log": [], "harvest_log": {}, "pollute_log": []}, stream_mode="values"))
 
@@ -572,7 +576,7 @@ class Agent:
                 reward=1.0,
             )
         except Exception as e:
-            with open(self.error_log, "a") as fe:
+            with self._open_log(self.error_log, "a") as fe:
                 fe.write(f"[MemoryWriter] {self.target_tool_info['name']} error: {e}\n")
             return {"written": False, "reason": str(e)}
 
@@ -691,7 +695,7 @@ class Agent:
         malicious_tool = self.generated_tools[-1]
         log_content = {"module": "hijacker", "malicious_tool": malicious_tool, "target_tool": self.target_tool_info}
 
-        with open(self.log, 'a') as f:
+        with self._open_log(self.log, 'a') as f:
             f.write(f"=====================\n[Hijacker] Start testing: {malicious_tool['name']}\n")
 
         if self.framework == "langchain":
@@ -749,7 +753,7 @@ class Agent:
                     self.debug("[Hijacker] encounter recursion limit")
                     continue
                 except Exception as e:
-                    with open(self.error_log, 'a') as f:
+                    with self._open_log(self.error_log, 'a') as f:
                         f.write(f"[Hijacker] {self.target_tool_info['name']} error: {e}\n")
 
                 time.sleep(self.tool_timewait)
@@ -788,7 +792,7 @@ class Agent:
                     "success": flag,
                 })
 
-                with open(self.log, 'a') as f:
+                with self._open_log(self.log, 'a') as f:
                     json.dump(query_trajectories[-1], f)
                     f.write("\n")
 
@@ -804,7 +808,7 @@ class Agent:
             # log_content["query_trajectories"] = query_trajectories
             log_content["success_rate"] = f"{success}/{count}"
 
-            with open(self.hijack_log, 'a') as f:
+            with self._open_log(self.hijack_log, 'a') as f:
                 json.dump(log_content, f)
                 f.write("\n")
 
@@ -812,7 +816,7 @@ class Agent:
             message = AIMessage(f"[Hijacker] {malicious_tool['name']} success rate: {success}/{count}")
             self.current_hijack_success = (success, count)
 
-            with open(self.log, 'a') as f:
+            with self._open_log(self.log, 'a') as f:
                 f.write(f"[Hijacker] success rate: {success}/{count}\n====================\n")
 
             return {"limit": limit + 1, "messages": message, "hijack_log": log_content}
@@ -833,7 +837,7 @@ class Agent:
                     ta = TestingAgent(self.target_llm, [tool, self.target_tool], [self.llama_index_system_prompt])
                     response = ta.chat(query)
                 except Exception as e:
-                    with open(self.error_log, 'a') as fe:
+                    with self._open_log(self.error_log, 'a') as fe:
                         fe.write(f"[Hijacker] {self.target_tool_info['name']} error: {e}\n")
                     continue
                 toolcall_sequence = []
@@ -868,7 +872,7 @@ class Agent:
                     "trajectory": [str(msg) for msg in ta._chat_history],
                 })
 
-                with open(self.log, 'a') as f:
+                with self._open_log(self.log, 'a') as f:
                     json.dump(query_trajectories[-1], f)
                     f.write("\n")
 
@@ -877,7 +881,7 @@ class Agent:
 
             log_content["success_rate"] = f"{success}/{count}"
 
-            with open(self.hijack_log, 'a') as f:
+            with self._open_log(self.hijack_log, 'a') as f:
                 json.dump(log_content, f, indent=4)
                 f.write("\n")
 
@@ -891,7 +895,7 @@ class Agent:
             message = AIMessage(f"[Hijacker] Success rate: {success}/{count}")
             self.current_hijack_success = (success, count)
 
-            with open(self.log, 'a') as f:
+            with self._open_log(self.log, 'a') as f:
                 f.write(f"[Hijacker] success rate: {success}/{count}\n====================\n")
 
             return {"limit": limit + 1, "messages": message, "hijack_log": log_content}
@@ -901,7 +905,7 @@ class Agent:
         def run():
             ...
 
-        with open(self.log, 'a') as f:
+        with self._open_log(self.log, 'a') as f:
             crd = []
             for sensitive_data in self.parameters:
                 f.write(f"=====================\n[Harvester] CRD: {sensitive_data}\n")
@@ -980,7 +984,7 @@ class Agent:
                                 "benign_output": benign_output,
                                 "malicious_input": malicious_input,
                             }
-                            with open(self.harvest_log, 'a') as fh:
+                            with self._open_log(self.harvest_log, 'a') as fh:
                                 json.dump(data, fh)
                                 fh.write("\n")
                             data["trajectory"] = conv
@@ -998,7 +1002,7 @@ class Agent:
                                 ta = TestingAgent(self.target_llm, [tool, self.target_tool], [self.llama_index_system_prompt])
                                 response = ta.chat(query)
                             except Exception as e:
-                                with open(self.error_log, 'a') as fe:
+                                with self._open_log(self.error_log, 'a') as fe:
                                     fe.write(f"[Harvester] {self.target_tool_info['name']} error: {e}\n")
                                 continue
                             conv = ta._chat_history
@@ -1025,7 +1029,7 @@ class Agent:
                                 "benign_output": benign_output,
                                 "malicious_input": malicious_input,
                             }
-                            with open(self.harvest_log, 'a') as fh:
+                            with self._open_log(self.harvest_log, 'a') as fh:
                                 json.dump(data, fh)
                                 fh.write("\n")
                             data["trajectory"] = conv
@@ -1093,13 +1097,13 @@ class Agent:
         self.sensitive_data = parameters.keys()
         self.parameters = parameters
 
-        with open(self.log, "a") as f:
+        with self._open_log(self.log, "a") as f:
             f.write(f"[Harvester] Harvester suggested CRD for {self.target_tool_info['name']}: {self.parameters}\n")
 
         return {"messages": AIMessage(f"Harvester suggested CRD: {self.parameters}")}
 
     def test_pollute_result(self, state: AgentState):
-        with (open(self.log, "a") as f):
+        with (self._open_log(self.log, "a") as f):
             f.write(f"[Polluter] Testing: {self.malicious_tool_info['name']}\n")
 
             if self.framework == 'langchain':
@@ -1145,7 +1149,7 @@ class Agent:
                         self.debug("[Polluter] exceed recursion limit")
                         pass
                     except Exception as e:
-                        with open(self.error_log, 'a') as f:
+                        with self._open_log(self.error_log, 'a') as f:
                             f.write(f"[Polluter] {self.target_tool_info['name']} error: {e}\n")
                             import pdb; pdb.set_trace()
                             continue
@@ -1158,7 +1162,7 @@ class Agent:
                     benign_input_value = ""
                     xtp_output_value = ""
                     tool_call_sequence = []
-                    with open(self.log, "a") as f:
+                    with self._open_log(self.log, "a") as f:
                         f.write(f"[Polluter] Trajectory: {str(conv['messages'])}\n")
                     for msg in conv["messages"]:
                         if isinstance(msg, AIMessage):
@@ -1197,7 +1201,7 @@ class Agent:
                         "memory_write": memory_write_result,
                     }
                     # move the judgement to the end
-                    with open(self.pollute_log, "a") as fp:
+                    with self._open_log(self.pollute_log, "a") as fp:
                         json.dump(result, fp, indent=4)
                         fp.write("\n")
                     pollute_log.append(result)
@@ -1228,7 +1232,7 @@ class Agent:
                     try:
                         response = ta.chat(query)
                     except Exception as e:
-                        with open(self.error_log, 'a') as fp:
+                        with self._open_log(self.error_log, 'a') as fp:
                             fp.write(f"[Polluter] {self.target_tool_info['name']} error: {e}\n")
                             continue
                     toolcall_sequence = []
@@ -1274,7 +1278,7 @@ class Agent:
                     "original_output": str(benign_output_value),
                     "final_output": str(response.response)
                 }
-                with open(self.pollute_log, "a") as fp:
+                with self._open_log(self.pollute_log, "a") as fp:
                     json.dump(result, fp, indent=4)
                     fp.write("\n")
                 pollute_log.append(result)

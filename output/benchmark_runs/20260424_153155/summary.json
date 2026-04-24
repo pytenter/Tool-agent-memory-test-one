@@ -1,0 +1,14 @@
+{
+  "status": "dry_run",
+  "selected_case_count": 3,
+  "requested_tools": [
+    "arxiv"
+  ],
+  "loaded_tools": [],
+  "tool_validation_enabled": true,
+  "tool_validation_error": {
+    "type": "ImportError",
+    "message": "Could not import arxiv python package. Please install it with `pip install arxiv`."
+  },
+  "output_dir": "C:\\Users\\admin\\Desktop\\对抗攻击\\Tool-memory的实验\\Chord-main\\output\\benchmark_runs\\20260424_153155"
+}

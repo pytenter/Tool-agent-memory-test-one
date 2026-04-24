@@ -1,0 +1,25 @@
+{
+  "status": "dry_run",
+  "selected_case_count": 4,
+  "requested_tools": [
+    "arxiv",
+    "wikipedia",
+    "yahoo_finance_news"
+  ],
+  "loaded_tools": [],
+  "import_validation_enabled": true,
+  "import_validation": {
+    "wikipedia": {
+      "status": "ok"
+    },
+    "yahoo_finance_news": {
+      "status": "ok"
+    },
+    "arxiv": {
+      "status": "ok"
+    }
+  },
+  "tool_validation_enabled": false,
+  "tool_validation_error": null,
+  "output_dir": "C:\\Users\\admin\\Desktop\\对抗攻击\\Tool-memory的实验\\Chord-main\\output\\benchmark_runs\\20260424_165617"
+}

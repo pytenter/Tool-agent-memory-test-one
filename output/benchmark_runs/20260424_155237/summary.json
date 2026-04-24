@@ -1,0 +1,21 @@
+{
+  "status": "dry_run",
+  "selected_case_count": 5,
+  "requested_tools": [
+    "Wikidata"
+  ],
+  "loaded_tools": [],
+  "import_validation_enabled": true,
+  "import_validation": {
+    "Wikidata": {
+      "status": "ok"
+    }
+  },
+  "tool_validation_enabled": true,
+  "tool_validation_error": {
+    "type": "ConnectionError",
+    "message": "HTTPSConnectionPool(host='en.wikipedia.org', port=443): Max retries exceeded with url: /w/api.php?meta=siteinfo&siprop=languages&format=json&action=query (Caused by NewConnectionError(\"HTTPSConnection(host='en.wikipedia.org', port=443): Failed to establish a new connection: [WinError 10013] 以一种访问权限不允许的方式做了一个访问套接字的尝试。\"))",
+    "phase": "live_endpoint_validation"
+  },
+  "output_dir": "C:\\Users\\admin\\Desktop\\对抗攻击\\Tool-memory的实验\\Chord-main\\output\\benchmark_runs\\20260424_155237"
+}

@@ -1,0 +1,89 @@
+{
+  "benchmark_name": "TMC-ChordTools",
+  "benchmark_version": "v1",
+  "case_schema_version": "1.0",
+  "framework": "langchain",
+  "total_cases": 85,
+  "total_target_tools": 10,
+  "attack_surface_counts": {
+    "predecessor": 50,
+    "successor": 35
+  },
+  "domain_counts": {
+    "filesystem_ops": 5,
+    "finance_data": 20,
+    "knowledge_lookup": 10,
+    "scholarly_research": 20,
+    "social_content": 10,
+    "timing_control": 5,
+    "travel_weather": 5,
+    "web_search": 10
+  },
+  "privilege_level_counts": {
+    "control_flow": 5,
+    "external_read": 75,
+    "local_exec": 5
+  },
+  "defense_ready_case_count": 85,
+  "defense_ready_tool_count": 10,
+  "recommended_track_counts": {
+    "attack_core": 85,
+    "defense_ready": 85
+  },
+  "cases_per_tool": {
+    "arxiv": 10,
+    "closest_airport": 5,
+    "income_statements": 10,
+    "polygon_ticker_news": 10,
+    "reddit_search": 10,
+    "semanticscholar": 10,
+    "sleep": 5,
+    "tavily_answer": 10,
+    "terminal": 5,
+    "wikipedia": 10
+  },
+  "source_summary": {
+    "query_tool_count": 32,
+    "victim_tool_count": 37,
+    "predecessor_tool_count": 34,
+    "successor_tool_count": 21,
+    "covered_tool_count": 10,
+    "defense_ready_tool_count": 10,
+    "query_only_tools_without_attack": [
+      "copy_file",
+      "list_directory",
+      "write_file"
+    ],
+    "attack_only_tools_without_queries": {
+      "predecessor": [
+        "asknews_search",
+        "cogniswitch_knowledge_request",
+        "cogniswitch_knowledge_source_file",
+        "cogniswitch_knowledge_source_url",
+        "searchapi",
+        "searchapi_result"
+      ],
+      "successor": [
+        "searchapi",
+        "searchapi_result"
+      ]
+    },
+    "covered_tools": [
+      "arxiv",
+      "closest_airport",
+      "income_statements",
+      "polygon_ticker_news",
+      "reddit_search",
+      "semanticscholar",
+      "sleep",
+      "tavily_answer",
+      "terminal",
+      "wikipedia"
+    ]
+  },
+  "validation": {
+    "is_valid": true,
+    "issue_count": 0,
+    "issues": []
+  }
+}

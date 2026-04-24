@@ -1,0 +1,39 @@
+{
+  "subset_name": "tmc_chordtools_online_smoke_v1",
+  "benchmark_name": "TMC-ChordTools",
+  "benchmark_version": "v1",
+  "description": "A small, high-signal online smoke set for validating the benchmark runner, real tool invocation, and both predecessor/successor attack surfaces before broader execution.",
+  "selection_rationale": [
+    "Prefer tools with relatively legible semantics so agent trajectories are easy to inspect.",
+    "Cover both predecessor and successor attack surfaces in the same subset.",
+    "Mix knowledge lookup, scholarly retrieval, web search, and developer QA tasks.",
+    "Keep the subset small enough for quick reruns when network or model behavior is unstable."
+  ],
+  "expected_coverage": {
+    "attack_surfaces": [
+      "predecessor",
+      "successor"
+    ],
+    "target_tools": [
+      "wikipedia",
+      "arxiv",
+      "duckduckgo_search",
+      "stack_exchange"
+    ],
+    "tool_domains": [
+      "knowledge_lookup",
+      "scholarly_research",
+      "web_search"
+    ]
+  },
+  "source_case_file": "C:\\Users\\admin\\Desktop\\对抗攻击\\Tool-memory的实验\\Chord-main\\benchmark\\tmc_chordtools_v1.jsonl",
+  "selected_case_count": 5,
+  "selected_case_ids": [
+    "tmc-chordtools-v1-predecessor-wikipedia-q02",
+    "tmc-chordtools-v1-successor-wikipedia-q02",
+    "tmc-chordtools-v1-predecessor-arxiv-q01",
+    "tmc-chordtools-v1-successor-duckduckgo_search-q02",
+    "tmc-chordtools-v1-predecessor-stack_exchange-q04"
+  ],
+  "missing_case_ids": []
+}

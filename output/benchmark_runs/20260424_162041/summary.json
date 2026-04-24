@@ -1,0 +1,13 @@
+{
+  "status": "completed",
+  "generated_at_utc": "2026-04-24T08:22:46.869356+00:00",
+  "total_cases": 2,
+  "completed_cases": 0,
+  "failed_cases": 2,
+  "successful_case_ids": [],
+  "failed_case_ids": [
+    "tmc-chordtools-v1-predecessor-wikipedia-q02",
+    "tmc-chordtools-v1-successor-wikipedia-q02"
+  ],
+  "pollute_success_rate_mean": 0.0
+}

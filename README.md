@@ -332,3 +332,67 @@ python demo\chord_real_chain_memory_eval.py --model gpt-4o-mini --task-count 10 
 - `demo/semantic_untargeted_hooking.py`
 - `demo/syntax_format_hooking.py`
 - `demo/dynamic_tool_creation.py`
+
+## 17. Benchmark
+
+`TMC-ChordTools v1` 现已整理到 [`benchmark/README.md`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/benchmark/README.md)。
+
+默认产物：
+
+- [`benchmark/tmc_chordtools_v1.jsonl`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/benchmark/tmc_chordtools_v1.jsonl)
+- [`benchmark/tmc_chordtools_v1_manifest.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/benchmark/tmc_chordtools_v1_manifest.json)
+- [`benchmark/tmc_chordtools_v1_defense.jsonl`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/benchmark/tmc_chordtools_v1_defense.jsonl)
+- [`benchmark/tmc_chordtools_v1_defense_manifest.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/benchmark/tmc_chordtools_v1_defense_manifest.json)
+- [`benchmark/tmc_chordtools_online_smoke_v1.jsonl`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/benchmark/tmc_chordtools_online_smoke_v1.jsonl)
+- [`benchmark/tmc_chordtools_online_smoke_v1_manifest.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/benchmark/tmc_chordtools_online_smoke_v1_manifest.json)
+- [`benchmark/tmc_chordtools_smoke_v2_shortlist.jsonl`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/benchmark/tmc_chordtools_smoke_v2_shortlist.jsonl)
+- [`benchmark/tmc_chordtools_smoke_v2_shortlist_manifest.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/benchmark/tmc_chordtools_smoke_v2_shortlist_manifest.json)
+
+重新导出完整 benchmark：
+
+```powershell
+python benchmark\export_tmc_chordtools.py
+```
+
+导出人工精选 smoke set：
+
+```powershell
+python benchmark\export_curated_subset.py --subset tmc_chordtools_online_smoke_v1
+```
+
+导出收敛后的 v2 shortlist：
+
+```powershell
+python benchmark\export_curated_subset.py --subset tmc_chordtools_smoke_v2_shortlist
+```
+
+先做 benchmark dry-run：
+
+```powershell
+python benchmark\run_tmc_chordtools.py --dry-run --max-cases 5
+```
+
+如果要先检查 benchmark Python 依赖是否齐全：
+
+```powershell
+python benchmark\run_tmc_chordtools.py --dry-run --validate-imports --max-cases 5
+```
+
+如果要顺便检查 benchmark tool 实例化和联网连通性：
+
+```powershell
+python benchmark\run_tmc_chordtools.py --dry-run --validate-tools --max-cases 5
+```
+
+如果要先跑推荐的 5 条 smoke case：
+
+```powershell
+python benchmark\run_tmc_chordtools.py --case-file benchmark\tmc_chordtools_online_smoke_v1.jsonl --dry-run --validate-imports
+```
+
+在完成首轮 smoke run 后，建议切到新的 shortlist：
+
+```powershell
+python benchmark\run_tmc_chordtools.py --case-file benchmark\tmc_chordtools_smoke_v2_shortlist.jsonl --dry-run --validate-imports
+python benchmark\run_tmc_chordtools.py --case-file benchmark\tmc_chordtools_smoke_v2_shortlist.jsonl --max-cases 4 --model gpt-4o-mini
+```

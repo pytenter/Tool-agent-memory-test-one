@@ -1,0 +1,131 @@
+{
+  "benchmark_name": "TMC-ChordTools",
+  "benchmark_version": "v1",
+  "case_schema_version": "1.0",
+  "framework": "langchain",
+  "total_cases": 235,
+  "total_target_tools": 29,
+  "attack_surface_counts": {
+    "predecessor": 140,
+    "successor": 95
+  },
+  "domain_counts": {
+    "filesystem_ops": 25,
+    "finance_data": 65,
+    "knowledge_lookup": 25,
+    "network_ops": 5,
+    "scholarly_research": 20,
+    "social_content": 20,
+    "timing_control": 5,
+    "travel_weather": 15,
+    "web_search": 55
+  },
+  "privilege_level_counts": {
+    "control_flow": 5,
+    "external_read": 200,
+    "local_exec": 5,
+    "local_read": 10,
+    "local_write": 10,
+    "network_write": 5
+  },
+  "defense_ready_case_count": 85,
+  "defense_ready_tool_count": 10,
+  "recommended_track_counts": {
+    "attack_core": 235,
+    "defense_ready": 85
+  },
+  "cases_per_tool": {
+    "Wikidata": 10,
+    "arxiv": 10,
+    "balance_sheets": 10,
+    "brave_search": 10,
+    "cash_flow_statements": 10,
+    "closest_airport": 5,
+    "duckduckgo_results_json": 5,
+    "duckduckgo_search": 10,
+    "file_delete": 5,
+    "file_search": 5,
+    "income_statements": 10,
+    "move_file": 5,
+    "open_weather_map": 10,
+    "polygon_aggregates": 5,
+    "polygon_financials": 10,
+    "polygon_ticker_news": 10,
+    "read_file": 5,
+    "reddit_search": 10,
+    "requests_put": 5,
+    "semanticscholar": 10,
+    "sleep": 5,
+    "stack_exchange": 5,
+    "tavily_answer": 10,
+    "tavily_search_results_json": 10,
+    "terminal": 5,
+    "wikipedia": 10,
+    "yahoo_finance_news": 10,
+    "you_search": 10,
+    "youtube_search": 10
+  },
+  "source_summary": {
+    "query_tool_count": 32,
+    "victim_tool_count": 37,
+    "predecessor_tool_count": 34,
+    "successor_tool_count": 21,
+    "covered_tool_count": 29,
+    "defense_ready_tool_count": 10,
+    "query_only_tools_without_attack": [
+      "copy_file",
+      "list_directory",
+      "write_file"
+    ],
+    "attack_only_tools_without_queries": {
+      "predecessor": [
+        "asknews_search",
+        "cogniswitch_knowledge_request",
+        "cogniswitch_knowledge_source_file",
+        "cogniswitch_knowledge_source_url",
+        "searchapi",
+        "searchapi_result"
+      ],
+      "successor": [
+        "searchapi",
+        "searchapi_result"
+      ]
+    },
+    "covered_tools": [
+      "Wikidata",
+      "arxiv",
+      "balance_sheets",
+      "brave_search",
+      "cash_flow_statements",
+      "closest_airport",
+      "duckduckgo_results_json",
+      "duckduckgo_search",
+      "file_delete",
+      "file_search",
+      "income_statements",
+      "move_file",
+      "open_weather_map",
+      "polygon_aggregates",
+      "polygon_financials",
+      "polygon_ticker_news",
+      "read_file",
+      "reddit_search",
+      "requests_put",
+      "semanticscholar",
+      "sleep",
+      "stack_exchange",
+      "tavily_answer",
+      "tavily_search_results_json",
+      "terminal",
+      "wikipedia",
+      "yahoo_finance_news",
+      "you_search",
+      "youtube_search"
+    ]
+  },
+  "validation": {
+    "is_valid": true,
+    "issue_count": 0,
+    "issues": []
+  }
+}

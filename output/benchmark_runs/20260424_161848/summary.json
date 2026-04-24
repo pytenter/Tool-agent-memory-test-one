@@ -1,0 +1,29 @@
+{
+  "status": "dry_run",
+  "selected_case_count": 5,
+  "requested_tools": [
+    "arxiv",
+    "duckduckgo_search",
+    "stack_exchange",
+    "wikipedia"
+  ],
+  "loaded_tools": [],
+  "import_validation_enabled": true,
+  "import_validation": {
+    "wikipedia": {
+      "status": "ok"
+    },
+    "arxiv": {
+      "status": "ok"
+    },
+    "stack_exchange": {
+      "status": "ok"
+    },
+    "duckduckgo_search": {
+      "status": "ok"
+    }
+  },
+  "tool_validation_enabled": false,
+  "tool_validation_error": null,
+  "output_dir": "C:\\Users\\admin\\Desktop\\对抗攻击\\Tool-memory的实验\\Chord-main\\output\\benchmark_runs\\20260424_161848"
+}
