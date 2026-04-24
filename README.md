@@ -1,124 +1,130 @@
 # Chord-main 实验说明
 
-这个仓库现在有两条可直接运行的实验线：
+这个仓库当前聚焦一条明确的研究主线：
+
+`successor/post-processor tool return -> memory write -> persistent memory -> future retrieval -> agent behavior drift`
+
+当前版本已经跑通两条实验线：
 
 - 本地无 API 的最小原型
-- 接入 `Chord Agent / TestingAgent` 真实执行链的 memory contamination 评估
+- 接入 `Chord Agent / TestingAgent` 的真实链 memory contamination 评估
 
-当前默认使用 OpenAI 兼容接口，已适配 API易。
+这份 README 的目标不是介绍所有历史代码，而是**固定当前可复现的实验里程碑**。默认推荐环境是 `conda`，默认推荐 retrieval 配置是 `embedding`。
 
-## 1. 当前实验目标
+## 1. 当前里程碑
 
-当前新增原型聚焦下面这条链路：
+当前已经稳定落地的内容：
 
-1. 正常目标工具先返回结果
-2. 一个 successor/post-processor 工具返回安全占位 payload
-3. payload 被写入 persistent memory
-4. 后续任务通过 retrieval 命中该 memory
-5. 观察 agent 是否出现：
-   - tool preference shift
-   - workflow order drift
-   - output drift
-   - reasoning drift
-6. 再对比 defense 是否能压制这种影响
+- 安全占位 payload 经 successor/post-processor 写入 memory store
+- follow-up 任务通过 retrieval 命中 memory
+- 观察 tool preference / workflow / output / reasoning drift
+- 比较 `clean / contaminated_only / mixed / defense_mixed`
+- defense 组默认启用：
+  - provenance-aware retrieval
+  - memory type isolation
 
-所有污染内容都使用无害占位符：
+当前占位符标记：
 
 - `RULE_X`
 - `TOOL_PREF_Y`
 - `MEMORY_MARKER_Z`
 - `SAFE_PLACEHOLDER_NOTE`
 
-## 2. 目录重点
+## 2. 关键文件
 
-- [`chord/agent.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/chord/agent.py)
-  - Chord 主工作流，已接入安全 successor payload 和 memory write
-- [`chord/testing_agent.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/chord/testing_agent.py)
-  - 真实工具链执行与消息轨迹记录
-- [`chord/model_provider.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/chord/model_provider.py)
-  - 统一模型入口，默认走 API易
-- [`bridge/memory_writer.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/bridge/memory_writer.py)
-  - successor 输出写入 memory store
-- [`bridge/retrieval_adapter.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/bridge/retrieval_adapter.py)
-  - MINJA 风格语义检索，默认 `sentence-transformers` embedding
-- [`bridge/chord_real_chain.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/bridge/chord_real_chain.py)
-  - 真实链结果提取与指标计算
-- [`demo/safe_memory_pollution_eval.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/demo/safe_memory_pollution_eval.py)
-  - 本地无 API 的最小原型
 - [`demo/chord_real_chain_memory_eval.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/demo/chord_real_chain_memory_eval.py)
-  - 真实链实验入口
+  - 真实链主实验入口
+- [`demo/safe_memory_pollution_eval.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/demo/safe_memory_pollution_eval.py)
+  - 本地无 API 最小原型
+- [`chord/agent.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/chord/agent.py)
+  - write phase 主流程
+- [`chord/testing_agent.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/chord/testing_agent.py)
+  - follow-up retrieval 与 tool choice 执行
+- [`chord/model_provider.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/chord/model_provider.py)
+  - OpenAI 兼容模型入口，默认适配 API 易
+- [`bridge/memory_writer.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/bridge/memory_writer.py)
+  - memory write
+- [`bridge/retrieval_adapter.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/bridge/retrieval_adapter.py)
+  - retrieval 实现，支持 embedding / token
+- [`bridge/chord_real_chain.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/bridge/chord_real_chain.py)
+  - trace 提取和指标汇总
 
-## 3. 环境准备
+## 3. 推荐环境
 
 要求：
 
 - Python `>= 3.11`
-- 推荐使用独立虚拟环境
+- 推荐使用单独的 `conda` 环境
 
-### 3.1 创建环境
-
-如果你用 conda：
+推荐环境名：
 
 ```powershell
-conda create -n chord311 python=3.11 -y
-conda activate chord311
+conda create -n chord311_clean python=3.11 pip -y
+conda activate chord311_clean
 python --version
 ```
 
-### 3.2 安装依赖
+## 4. 安装依赖
 
-优先使用 `uv`：
-
-```powershell
-python -m pip install uv
-uv sync
-```
-
-如果 `uv` 因网络或代理不可用，可以退回 `pip`：
+当前主实验实际验证过的一组最小依赖如下：
 
 ```powershell
-python -m pip install -e .
+pip install langchain==0.3.23 langchain-core==0.3.51 langchain-community==0.3.21 langchain-openai==0.2.2 langgraph==0.2.34 langgraph-checkpoint==2.0.0 llama-index==0.11.19 python-dotenv sentence-transformers==5.1.1 transformers==4.57.1 torch
 ```
 
-当前真实链实验额外依赖：
+说明：
 
-- `langgraph`
-- `langchain`
-- `langchain-openai`
-- `torch`
-- `transformers`
-- `sentence-transformers`
+- 代码里使用 `from dotenv import load_dotenv`，对应包名是 `python-dotenv`
+- `sentence-transformers` 安装成功后，还需要首次下载 embedding 模型
 
-这些已经包含在 [`pyproject.toml`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/pyproject.toml) 里。
+## 5. API 易配置
 
-## 4. API易 配置
+当前默认走 API 易兼容接口：
 
-当前代码默认走 API易：
+- `OPENAI_BASE_URL=https://api.apiyi.com/v1`
+- `OPENAI_API_KEY=<你的 token>`
 
-- 默认 `base_url`：`https://api.apiyi.com/v1`
-- 读取环境变量：`OPENAI_API_KEY`
-
-推荐在仓库根目录使用 `.env`：
-
-1. 复制模板
+推荐在仓库根目录使用 [`.env.example`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/.env.example) 复制出 `.env`：
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-2. 编辑 [`.env`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/.env)
+`.env` 典型内容：
 
 ```env
-OPENAI_API_KEY=你的API易令牌
+OPENAI_API_KEY=your_token_here
 OPENAI_BASE_URL=https://api.apiyi.com/v1
 OPENAI_MODEL=gpt-4o-mini
 ```
 
-[`chord/model_provider.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/chord/model_provider.py) 会自动加载这个文件。
+[`chord/model_provider.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/chord/model_provider.py) 会自动加载仓库根目录下的 `.env`。
 
-## 5. 先做连通性测试
+## 6. Hugging Face 模型准备
 
-在跑真实链之前，先确认模型能通：
+embedding retrieval 默认使用：
+
+- `sentence-transformers/all-MiniLM-L6-v2`
+
+首次运行前建议先手动下载并写入本地缓存：
+
+```powershell
+python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2'); print('HF model OK')"
+```
+
+如果你所在网络环境需要代理，请先在当前终端里设置：
+
+```powershell
+$env:HTTP_PROXY="http://127.0.0.1:7890"
+$env:HTTPS_PROXY="http://127.0.0.1:7890"
+$env:HF_HUB_DOWNLOAD_TIMEOUT="60"
+```
+
+端口按你的代理实际端口修改。
+
+## 7. 连通性检查
+
+在跑真实链之前，先验证模型接口：
 
 ```powershell
 python -c "from chord.model_provider import create_chat_openai; llm=create_chat_openai(model='gpt-4o-mini', temperature=0); print(llm.invoke('Reply with OK').content)"
@@ -126,14 +132,14 @@ python -c "from chord.model_provider import create_chat_openai; llm=create_chat_
 
 如果输出 `OK` 或类似短回复，说明：
 
-- `.env` 已生效
-- API易 token 正常
-- `base_url` 正常
+- `.env` 生效
+- API token 正常
+- `OPENAI_BASE_URL` 正常
 - `langchain_openai` 可用
 
-## 6. 实验 1：本地无 API 最小原型
+## 8. 实验 1：本地无 API 原型
 
-这个实验不依赖真实 LLM API，适合先验证整条机制：
+这个实验适合先验证机制闭环：
 
 ```powershell
 python demo\safe_memory_pollution_eval.py
@@ -142,61 +148,35 @@ python demo\safe_memory_pollution_eval.py
 输出文件：
 
 - [`output/safe_memory_pollution_summary.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/output/safe_memory_pollution_summary.json)
+- [`output/baseline_memory_store.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/output/baseline_memory_store.json)
 - [`output/benign_memory_store.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/output/benign_memory_store.json)
 - [`output/contaminated_memory_store.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/output/contaminated_memory_store.json)
 - [`output/defense_memory_store.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/output/defense_memory_store.json)
 
-这条线的用途是：
+这条线的目标是：
 
-- 验证 `successor output -> memory write -> retrieval -> behavior drift`
+- 验证 `successor output -> memory write -> retrieval -> drift`
 - 不验证真实模型随机性
 
-## 7. 实验 2：真实链 memory contamination 评估
+## 9. 实验 2：真实链 embedding 主实验
 
-这个实验会真正使用：
-
-- `Chord Agent` 做 write phase
-- `TestingAgent` 做 follow-up retrieval 和 tool choice
-- MINJA 风格语义检索做 memory matching
-
-### 7.1 标准运行命令
+推荐主命令：
 
 ```powershell
 python demo\chord_real_chain_memory_eval.py --model gpt-4o-mini --task-count 10 --benign-memory-count 8 --retrieval-mode embedding
 ```
 
-这是当前最推荐的配置：
+当前推荐配置：
 
-- `task-count=10`
-- `benign-memory-count=8`
-- `retrieval-mode=embedding`
+- `model = gpt-4o-mini`
+- `task-count = 10`
+- `benign-memory-count = 8`
+- `retrieval-mode = embedding`
+- `retrieval-top-k = 3`
+- `retrieval-min-score = 0.05`
+- `embedding-model = sentence-transformers/all-MiniLM-L6-v2`
 
-### 7.2 常用参数
-
-- `--model`
-  - 例如 `gpt-4o-mini`
-- `--task-count`
-  - follow-up 任务数
-- `--benign-memory-count`
-  - benign background memory 数量
-- `--retrieval-mode`
-  - `embedding`：默认，MINJA 风格语义检索
-  - `token`：词面重叠对照组
-  - `auto`：有 embedding 就用 embedding，否则回退 token
-- `--retrieval-top-k`
-  - 当前默认 `3`
-- `--retrieval-min-score`
-  - 当前默认 `0.05`
-- `--embedding-model`
-  - 当前默认 `sentence-transformers/all-MiniLM-L6-v2`
-
-### 7.3 建议的几组对照
-
-语义检索主实验：
-
-```powershell
-python demo\chord_real_chain_memory_eval.py --model gpt-4o-mini --task-count 10 --benign-memory-count 8 --retrieval-mode embedding
-```
+常用对照：
 
 词面对照组：
 
@@ -210,19 +190,19 @@ python demo\chord_real_chain_memory_eval.py --model gpt-4o-mini --task-count 10 
 python demo\chord_real_chain_memory_eval.py --model gpt-4o-mini --task-count 10 --benign-memory-count 20 --retrieval-mode embedding
 ```
 
-调大检索候选：
+调大候选：
 
 ```powershell
 python demo\chord_real_chain_memory_eval.py --model gpt-4o-mini --task-count 10 --benign-memory-count 8 --retrieval-mode embedding --retrieval-top-k 5
 ```
 
-## 8. 真实链实验输出怎么看
+## 10. 如何确认这次真的是 embedding 实验
 
-真实链输出目录默认在：
+真实链输出目录：
 
 - [`output/real_chain`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/output/real_chain)
 
-重点文件：
+核心文件：
 
 - [`output/real_chain/real_chain_summary.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/output/real_chain/real_chain_summary.json)
 - [`output/real_chain/baseline_runs.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/output/real_chain/baseline_runs.json)
@@ -230,14 +210,27 @@ python demo\chord_real_chain_memory_eval.py --model gpt-4o-mini --task-count 10 
 - [`output/real_chain/mixed_runs.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/output/real_chain/mixed_runs.json)
 - [`output/real_chain/defense_runs.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/output/real_chain/defense_runs.json)
 
-memory store：
+现在结果文件中会同时记录：
 
-- [`output/real_chain/clean_memory_store.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/output/real_chain/clean_memory_store.json)
-- [`output/real_chain/contaminated_only_memory_store.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/output/real_chain/contaminated_only_memory_store.json)
-- [`output/real_chain/mixed_memory_store.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/output/real_chain/mixed_memory_store.json)
-- [`output/real_chain/defense_mixed_memory_store.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/output/real_chain/defense_mixed_memory_store.json)
+- `retrieval_config.requested_mode`
+- `retrieval_config.actual_mode_summary`
+- 每条 run trace 的 `retrieval_mode`
+- `runtime` 元数据，包括 Python 路径、版本和关键依赖版本
 
-### 8.1 你最应该先看哪些指标
+建议先检查：
+
+- `retrieval_config.requested_mode == "embedding"`
+- `actual_mode_summary` 中主导模式是 `embedding`
+- 每组 runs 里多数 `retrieval_mode` 为 `embedding`
+
+说明：
+
+- 个别 run 的 `retrieval_mode = ""` 不表示 fallback
+- 它表示该条 run 根本没有走到 `memory_lookup` 工具消息
+
+## 11. 重点指标
+
+建议优先看：
 
 - `Memory Write Success Rate`
 - `Retrieval Hit Rate`
@@ -247,121 +240,95 @@ memory store：
 - `Behavior Drift Rate`
 - `Provenance Detection Rate`
 
-### 8.2 结果解释建议
+解释建议：
 
 - `contaminated_only`
-  - 看污染记忆在低竞争环境下能否命中并触发
+  - 看污染 memory 在低竞争环境下能否命中并触发
 - `mixed`
-  - 看 benign background 是否把污染记忆竞争下去
+  - 看 benign background 是否压制污染 memory
 - `defense_mixed`
-  - 看 defense 是否把污染命中和污染激活压回去
+  - 看 defense 是否把污染命中和激活压回去
 
-## 9. 当前检索实现
+## 12. 当前 retrieval 行为
 
-当前 retrieval 在 [`bridge/retrieval_adapter.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/bridge/retrieval_adapter.py)。
+[`bridge/retrieval_adapter.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/bridge/retrieval_adapter.py) 当前实现：
 
-默认是 MINJA/RAP 风格的语义路径：
+- embedding 可用时优先走 `sentence-transformers`
+- embedding 不可用时回退到 token overlap
 
-- 主信号：`Instruction`
-- 辅助信号：`SanitizedMemoryText`
-- 轨迹信号：`Actions`
-- 额外信号：完整 record 文本
+因此如果你看到：
 
-当前做法是：
+- `requested_mode = embedding`
+- 实际 run trace 大量显示 `retrieval_mode = token`
 
-- 优先使用 `sentence-transformers` embedding
-- 若 embedding 不可用，则回退到 token overlap
+那就意味着：
 
-如果你跑完后发现 trace 里 `retrieval_mode` 是 `token`，通常说明：
+- embedding 模型没成功加载
+- 或运行时回退到了 token
 
-- `sentence-transformers` 没装成功
-- 或 embedding 模型没加载起来
+如果 run trace 中主导模式是 `embedding`，才可以把这次结果称为 embedding retrieval 实验结果。
 
-## 10. 当前防御设置
+## 13. 当前 defense 设置
 
-真实链实验里的 defense 组默认同时打开：
+真实链 defense 组默认同时启用：
 
 - provenance-aware retrieval
 - memory type isolation
 
 也就是：
 
-- 对非可信来源 memory 做降权或隔离
-- 只让可信 `WriteReason` 的 background memory 保持正常检索优先级
+- 对低信任来源 memory 降权
+- 对不可信 `WriteReason` 记录做隔离
 
-## 11. 常见问题
+## 14. 常见问题
 
-### 11.1 `uv` 不存在
+### 14.1 `openai.APIConnectionError`
 
-```powershell
-python -m pip install uv
-```
+检查：
 
-如果还是装不上，就直接：
+- `.env` 中 `OPENAI_API_KEY` 是否有效
+- `OPENAI_BASE_URL` 是否可访问
+- 当前网络是否能访问 API 易
 
-```powershell
-python -m pip install -e .
-```
+### 14.2 Hugging Face 模型下载超时
 
-### 11.2 `ModuleNotFoundError: langgraph`
+说明终端无法访问 `huggingface.co`。优先检查：
 
-说明依赖没有装完整。重新执行：
+- 代理是否开启
+- `HTTP_PROXY / HTTPS_PROXY` 是否设置到当前终端
 
-```powershell
-uv sync
-```
+模型只要成功下载一次，后续通常可直接走本地缓存。
 
-或：
+### 14.3 `Retrieval Hit Rate` 高，但 `Contaminated Hit Rate` 低
 
-```powershell
-python -m pip install -e .
-```
+说明 mixed store 中命中的大多是 benign background memory，而不是污染 memory。
 
-### 11.3 `openai.APIConnectionError`
+### 14.4 `Memory Write Success Rate = 1.0`，但 `Retrieval Hit Rate < 1.0`
 
-先确认：
-
-- `.env` 里的 `OPENAI_API_KEY` 不为空
-- `OPENAI_BASE_URL=https://api.apiyi.com/v1`
-- 你的网络能访问 API易
-
-### 11.4 为什么 `Memory Write Success Rate = 1.0` 但 `Retrieval Hit Rate < 1.0`
-
-因为写进 memory 不等于每个 follow-up 任务都会：
+写入成功不等于每个 follow-up 任务都会：
 
 - 调用 `memory_lookup`
 - 命中相关 memory
-- 或真正使用它做决策
+- 使用它做决策
 
-### 11.5 为什么 `Retrieval Hit Rate` 很高但 `Contaminated Hit Rate` 不高
+## 15. 推荐复现顺序
 
-因为在 mixed store 下，agent 可能经常命中的是 benign background memory，而不是污染 memory。
-
-## 12. 原始 Chord demo
-
-原始仓库里的 demo 仍然可用，但它们不是你当前这条 memory contamination 研究主线的重点：
-
-- `demo/semantic_targeted_hooking.py`
-- `demo/semantic_untargeted_hooking.py`
-- `demo/syntax_format_hooking.py`
-- `demo/dynamic_tool_creation.py`
-
-## 13. 当前最推荐的运行顺序
-
-如果你要从头严谨地跑一遍，建议顺序是：
-
-1. 配好 `.env`
-2. 做连通性测试
-3. 先跑本地无 API 原型
-4. 再跑真实链语义检索实验
-5. 再做 token 对照组
-6. 再调 `benign-memory-count / retrieval-top-k / retrieval-min-score`
-
-对应命令：
+从零复现当前 embedding 里程碑，建议严格按下面顺序：
 
 ```powershell
+conda activate chord311_clean
+python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2'); print('HF model OK')"
 python -c "from chord.model_provider import create_chat_openai; llm=create_chat_openai(model='gpt-4o-mini', temperature=0); print(llm.invoke('Reply with OK').content)"
 python demo\safe_memory_pollution_eval.py
 python demo\chord_real_chain_memory_eval.py --model gpt-4o-mini --task-count 10 --benign-memory-count 8 --retrieval-mode embedding
 python demo\chord_real_chain_memory_eval.py --model gpt-4o-mini --task-count 10 --benign-memory-count 8 --retrieval-mode token
 ```
+
+## 16. 说明
+
+原始 Chord demo 仍然保留，但它们不是当前 memory contamination 主线的重点：
+
+- `demo/semantic_targeted_hooking.py`
+- `demo/semantic_untargeted_hooking.py`
+- `demo/syntax_format_hooking.py`
+- `demo/dynamic_tool_creation.py`

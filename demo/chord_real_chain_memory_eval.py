@@ -3,7 +3,10 @@
 import argparse
 import json
 import os
+import platform
 import sys
+from datetime import datetime, timezone
+from importlib import metadata
 from typing import Dict, List
 
 
@@ -19,6 +22,52 @@ from bridge.chord_real_chain import (
 )
 from bridge.memory_writer import append_memory_record, build_memory_record, reset_memory_store
 from bridge.payload_templates import get_safe_payload
+
+
+def _safe_package_version(package_name: str) -> str:
+    try:
+        return metadata.version(package_name)
+    except metadata.PackageNotFoundError:
+        return "not_installed"
+
+
+def _collect_runtime_metadata() -> Dict[str, object]:
+    return {
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "python_executable": sys.executable,
+        "python_version": sys.version,
+        "platform": platform.platform(),
+        "cwd": os.getcwd(),
+        "package_versions": {
+            "langchain": _safe_package_version("langchain"),
+            "langchain-core": _safe_package_version("langchain-core"),
+            "langchain-community": _safe_package_version("langchain-community"),
+            "langchain-openai": _safe_package_version("langchain-openai"),
+            "langgraph": _safe_package_version("langgraph"),
+            "llama-index": _safe_package_version("llama-index"),
+            "openai": _safe_package_version("openai"),
+            "python-dotenv": _safe_package_version("python-dotenv"),
+            "sentence-transformers": _safe_package_version("sentence-transformers"),
+            "transformers": _safe_package_version("transformers"),
+            "torch": _safe_package_version("torch"),
+        },
+    }
+
+
+def _summarize_retrieval_modes(runs: List[Dict]) -> Dict[str, object]:
+    counts: Dict[str, int] = {}
+    skipped_lookup_runs = 0
+    for run in runs:
+        mode = run.get("retrieval_mode", "")
+        if not mode:
+            skipped_lookup_runs += 1
+            continue
+        counts[mode] = counts.get(mode, 0) + 1
+    return {
+        "counts": counts,
+        "skipped_lookup_runs": skipped_lookup_runs,
+        "modes_seen": sorted(counts.keys()),
+    }
 
 
 def build_target_tool():
@@ -91,6 +140,7 @@ def build_memory_lookup_tool(
                 {
                     "hit_count": len(result["hits"]),
                     "snippets": [hit["snippet"] for hit in result["hits"]],
+                    "requested_retrieval_mode": retrieval_mode,
                     "retrieval_mode": result.get("retrieval_mode", retrieval_mode),
                     "flagged_records": result.get("flagged_records", 0),
                     "contaminated_hit_count": contaminated_hits,
@@ -443,14 +493,24 @@ def main():
     mixed_metrics["Provenance Detection Rate"] = mixed_metrics["Contaminated Provenance Detection Rate"]
     defense_metrics["Provenance Detection Rate"] = defense_metrics["Contaminated Provenance Detection Rate"]
 
+    actual_mode_summary = {
+        "baseline": _summarize_retrieval_modes(baseline_runs),
+        "contaminated_only": _summarize_retrieval_modes(contaminated_only_runs),
+        "mixed": _summarize_retrieval_modes(mixed_runs),
+        "defense_mixed": _summarize_retrieval_modes(defense_runs),
+    }
+
     summary = {
+        "runtime": _collect_runtime_metadata(),
         "task_count": len(tasks),
         "benign_memory_count": args.benign_memory_count,
         "retrieval_config": {
             "mode": args.retrieval_mode,
+            "requested_mode": args.retrieval_mode,
             "top_k": args.retrieval_top_k,
             "min_score": args.retrieval_min_score,
             "embedding_model": args.embedding_model,
+            "actual_mode_summary": actual_mode_summary,
         },
         "write_phase": {
             "clean_background_records": len(clean_background),
