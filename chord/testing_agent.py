@@ -428,13 +428,14 @@ class TestingAgent:
         # Return the state unchanged if the last message is not a tool message
         return state
 
-    def run(self, query: str):
+    def run(self, query: str, recursion_limit: Optional[int] = None):
         """Run the agent with a user query."""
         if self.enable_spotlight:
             state = {"messages": [("system", self.spotlight_system_msg), ("system", self.react_system_prompt), ("user", query)], "is_last_step": False}
         else:
             state = {"messages": [("system", self.react_system_prompt), ("user", query)], "is_last_step": False}
-        return self.graph.stream(state, stream_mode="values")
+        config = {"recursion_limit": recursion_limit} if recursion_limit else None
+        return self.graph.stream(state, config, stream_mode="values")
 
     @staticmethod
     def create_run_function(param_name, return_value):

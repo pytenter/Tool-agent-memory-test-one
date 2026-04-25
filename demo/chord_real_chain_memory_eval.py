@@ -205,8 +205,10 @@ def run_followup_tasks(
     retrieval_top_k: int = 3,
     retrieval_min_score: float = 0.05,
     embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+    recursion_limit: int = 60,
 ):
     from chord.testing_agent import TestingAgent
+    import langgraph.errors
 
     tools = build_followup_tools(
         store_path=store_path,
@@ -237,16 +239,47 @@ def run_followup_tasks(
     runs = []
     for task in tasks:
         ta = TestingAgent(llm, tools=tools, state_modifier=system_prompt)
-        stream = ta.run(task)
         conv = None
-        for state in stream:
-            conv = state
+        recursion_error = None
+        try:
+            stream = ta.run(task, recursion_limit=recursion_limit)
+            for state in stream:
+                conv = state
+        except langgraph.errors.GraphRecursionError as exc:
+            recursion_error = str(exc)
+
+        if conv is None:
+            trace = {
+                "tool_calls": [],
+                "retrieval_hits": 0,
+                "retrieval_snippets": [],
+                "retrieval_mode": "",
+                "contaminated_hits": 0,
+                "benign_hits": 0,
+                "flagged_contaminated_hits": 0,
+                "chosen_tool": "",
+                "final_answer": "",
+                "decision": {},
+                "error": {
+                    "type": "GraphRecursionError",
+                    "message": recursion_error or "follow-up agent did not produce a final state",
+                },
+                "query": task,
+            }
+            runs.append(trace)
+            continue
+
         trace = extract_followup_trace(
             conv,
             memory_tool_name="memory_lookup",
             action_tool_names=["TOOL_ALPHA", "TOOL_PREF_Y"],
         )
         trace["query"] = task
+        if recursion_error:
+            trace["error"] = {
+                "type": "GraphRecursionError",
+                "message": recursion_error,
+            }
         runs.append(trace)
     return runs
 

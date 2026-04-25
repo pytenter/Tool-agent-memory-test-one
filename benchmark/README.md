@@ -156,6 +156,24 @@ runner 默认输出到：
 - `output/benchmark_runs/<timestamp>/summary.json`
 - `output/benchmark_runs/<timestamp>/case_logs/<case_id>/...`
 
+## Attack-Core Stability
+
+对多轮 `benchmark_runs` 做稳定性汇总：
+
+```powershell
+python benchmark\summarize_attack_core.py --case-ids tmc-chordtools-v1-predecessor-arxiv-q01,tmc-chordtools-v1-successor-arxiv-q01 --max-runs 10
+```
+
+脚本会输出：
+
+- `output/benchmark_analysis/attack_core_stability_<timestamp>.json`
+- `output/benchmark_analysis/attack_core_stability_<timestamp>.csv`
+
+其中：
+
+- `json` 适合看每个 `case` 的完成轮数、失败轮数、`HSR/HASR/PSR` 平均值
+- `csv` 适合看逐轮明细，方便手动筛查异常 run
+
 推荐先跑这版人工精选 smoke set：
 
 ```powershell

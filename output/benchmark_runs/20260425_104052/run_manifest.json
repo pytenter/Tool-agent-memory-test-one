@@ -1,0 +1,31 @@
+{
+  "runner": "tmc_chordtools_attack_core",
+  "generated_at_utc": "2026-04-25T02:40:52.096711+00:00",
+  "case_file": "benchmark\\tmc_chordtools_smoke_v2_shortlist.jsonl",
+  "output_dir": "C:\\Users\\admin\\Desktop\\对抗攻击\\Tool-memory的实验\\Chord-main\\output\\benchmark_runs\\20260425_104052",
+  "selection": {
+    "attack_surface": "all",
+    "target_tools": [],
+    "case_ids": [
+      "tmc-chordtools-v1-predecessor-arxiv-q01",
+      "tmc-chordtools-v1-successor-arxiv-q01"
+    ],
+    "defense_ready_only": false,
+    "max_cases": null
+  },
+  "run_config": {
+    "model": "gpt-4o-mini",
+    "temperature": 0.0,
+    "graph_limit": 3,
+    "tool_timewait": 0.0,
+    "defense": "none",
+    "safe_payload_mode": false,
+    "memory_store_path": "",
+    "dry_run": false
+  },
+  "selected_case_count": 2,
+  "selected_case_ids": [
+    "tmc-chordtools-v1-predecessor-arxiv-q01",
+    "tmc-chordtools-v1-successor-arxiv-q01"
+  ]
+}

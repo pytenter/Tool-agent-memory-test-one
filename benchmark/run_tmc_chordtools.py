@@ -72,15 +72,53 @@ def _read_json_lines(path: Path) -> List[Dict[str, object]]:
     if not path.exists():
         return []
     rows: List[Dict[str, object]] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
+    payload = path.read_text(encoding="utf-8")
+    decoder = json.JSONDecoder()
+    index = 0
+    length = len(payload)
+    while index < length:
+        while index < length and payload[index].isspace():
+            index += 1
+        if index >= length:
+            break
         try:
-            rows.append(json.loads(line))
+            row, offset = decoder.raw_decode(payload, index)
         except json.JSONDecodeError:
+            next_newline = payload.find("\n", index)
+            if next_newline == -1:
+                break
+            index = next_newline + 1
             continue
+        if isinstance(row, dict):
+            rows.append(row)
+        index = offset
     return rows
+
+
+def _extract_metrics_from_final_log(final_log: str) -> Dict[str, Optional[Dict[str, object]]]:
+    metrics: Dict[str, Optional[Dict[str, object]]] = {
+        "hijack_success": None,
+        "harvest_success": None,
+        "pollute_success": None,
+    }
+    if not final_log.strip():
+        return metrics
+
+    last_line = final_log.strip().splitlines()[-1]
+    for metric_name, token in (
+        ("hijack_success", "HSR="),
+        ("harvest_success", "HASR="),
+        ("pollute_success", "PSR="),
+    ):
+        start = last_line.find(token)
+        if start == -1:
+            continue
+        start += len(token)
+        end = last_line.find(",", start)
+        if end == -1:
+            end = len(last_line)
+        metrics[metric_name] = _parse_fraction(last_line[start:end].strip())
+    return metrics
 
 
 def _read_text(path: Path) -> str:
@@ -96,15 +134,22 @@ def _extract_case_metrics(log_dir: Path, case_prefix: str) -> Dict[str, object]:
     pollute_details = _read_json_lines(log_dir / f"{case_prefix}_pollute.log")
     final_log = _read_text(log_dir / f"{case_prefix}_final.log")
     error_log = _read_text(log_dir / f"{case_prefix}_error.log")
+    final_log_metrics = _extract_metrics_from_final_log(final_log)
 
     pollute_memory_writes = [row.get("memory_write", {}) for row in pollute_details if isinstance(row, dict)]
     written_count = sum(1 for row in pollute_memory_writes if row.get("written"))
 
     return {
-        "hijack_success": _parse_fraction(hijack_rows[-1]["success_rate"]) if hijack_rows else None,
-        "harvest_success": _parse_fraction(harvest_rows[-1]["harvest_success"]) if harvest_rows else None,
+        "hijack_success": (
+            _parse_fraction(hijack_rows[-1]["success_rate"]) if hijack_rows else final_log_metrics["hijack_success"]
+        ),
+        "harvest_success": (
+            _parse_fraction(harvest_rows[-1]["harvest_success"]) if harvest_rows else final_log_metrics["harvest_success"]
+        ),
         "harvest_hijack_alignment": _parse_fraction(harvest_rows[-1]["hijack_success"]) if harvest_rows else None,
-        "pollute_success": _parse_fraction(pollute_rows[-1]["success_rate"]) if pollute_rows else None,
+        "pollute_success": (
+            _parse_fraction(pollute_rows[-1]["success_rate"]) if pollute_rows else final_log_metrics["pollute_success"]
+        ),
         "pollute_detail_count": len(pollute_details),
         "memory_write_summary": {
             "attempted_count": len(pollute_memory_writes),
