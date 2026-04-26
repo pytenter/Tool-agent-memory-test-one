@@ -25,7 +25,7 @@ What is already established:
 
 What is not yet done:
 
-- Offline benchmark v2 has not been formalized yet.
+- Offline benchmark v2 runner has not been unified yet.
 - Source-aware trust scoring has not been added yet.
 - Full Mem0-native retrieval has not been integrated yet.
 - Current admission-aware batch still runs with token retrieval in practice, not embedding retrieval.
@@ -44,6 +44,15 @@ What is not yet done:
   - Tool maps, queries, and benchmark resources.
 - `output/`
   - Experiment outputs and analysis artifacts.
+
+What is now formalized:
+
+- Offline benchmark v2 case schema and seed-case export layer
+- Four external offline benchmark domains integrated at the case level:
+  - `tau2_retail`
+  - `agentdojo_workspace`
+  - `tau2_airline`
+  - `agentdojo_travel`
 
 ## 3. Environment
 
@@ -147,6 +156,25 @@ Current family set:
 - `relational_style`
 
 These families keep the same payload schema while varying only the semantic style.
+
+### 4.4 Benchmark v2 Seed Integration
+
+The project now includes a formal benchmark-v2 seed layer:
+
+- `benchmark/tmc_mem0bench_v2.py`
+- `benchmark/export_tmc_mem0bench_v2.py`
+- `benchmark/validate_tmc_mem0bench_v2.py`
+- `benchmark/tmc_mem0bench_v2_seed.jsonl`
+- `benchmark/tmc_mem0bench_v2_seed_manifest.json`
+
+This layer does not yet execute all external domains through one shared runner.
+Instead, it freezes:
+
+- a common admission-aware case schema
+- task adapters for four offline domains
+- realistic attacker-benefit hypotheses
+- realistic domain-specific contaminated payload text
+- export and validation tooling
 
 ## 5. Current Mem0 Admission Metrics
 
@@ -281,6 +309,48 @@ Interpretation:
 - In the current offline implementation, payload semantics dominate source provenance.
 - The current Mem0-style admission path is not yet meaningfully source-sensitive.
 - This does not prove source is unimportant; it shows that the current implementation has not yet encoded source trust strongly enough to separate the two source classes.
+
+### 6.4 Benchmark v2 Seed Freeze
+
+Frozen artifacts:
+
+- `benchmark/tmc_mem0bench_v2_seed.jsonl`
+- `benchmark/tmc_mem0bench_v2_seed_manifest.json`
+
+Validation artifact:
+
+- `python benchmark\validate_tmc_mem0bench_v2.py`
+
+Current benchmark-v2 seed coverage:
+
+- total cases: `60`
+- `tau2_retail`: `18`
+- `tau2_airline`: `18`
+- `agentdojo_workspace`: `12`
+- `agentdojo_travel`: `12`
+
+Prompt-family coverage:
+
+- `existing_prompt_style`
+- `baseline_rule_literal`
+- `preference_style`
+- `constraint_style`
+- `default_workflow_style`
+- `update_style`
+
+What this seed layer already guarantees:
+
+- no legacy placeholder leakage (`TASK_TYPE_A`, `RULE_X`, `TOOL_PREF_Y`, etc.)
+- realistic attacker-benefit text for all integrated external domains
+- attacker-benefit framing that now explicitly models refund abuse, unauthorized rebooking or upgrades, sensitive workspace-data leakage, and high-margin travel steering
+- uniform case metadata for later runner integration
+- explicit `expected_mem0_admission`, `expected_trigger_behavior`, and `expected_conflict_behavior` fields
+
+What it does not guarantee yet:
+
+- a single multi-domain execution runner
+- source-aware trust scoring
+- Mem0-native retrieval execution
 
 ## 7. Current Experiment Boundaries
 

@@ -1,219 +1,205 @@
-# TMC-ChordTools v1 Benchmark
+# Benchmark
 
-这个目录把 `Chord-main` 里原本分散在 `data/` 和 `evaluation/` 的资源，整理成一个正式可验证的 benchmark 套件。
+This directory now contains two layers:
 
-当前目标不是覆盖所有论文阶段，而是先把 `TMC-ChordTools v1` 做扎实：  
-把 target tool、查询、恶意 predecessor/successor、参数语义和 defense-ready 子集固化成稳定的 case 文件。
+1. `TMC-ChordTools v1`
+2. `TMC-Mem0Bench v2 seed`
 
-## 设计原则
+`v1` is the original single-domain ChordTools benchmark.
 
-- 只收录已经同时具备 `query.json` 查询样本和 `malicious_tools.json` 攻击定义的工具。
-- predecessor 和 successor 是两个独立 attack surface，同一个 target tool 在两种 surface 下会生成不同 case。
-- 每条 case 只描述“实验对象与预期可观察现象”，不提前假定攻击一定成功。
-- benchmark 本身不绑定某一个单独脚本；后续真实链、消融、参数扫描都应复用这一层 case 定义。
+`v2 seed` is the new offline admission-aware benchmark integration layer that
+extends the project to four additional realistic domains without changing the
+current attack model:
 
-## Case Schema
+- `tau2_retail`
+- `agentdojo_workspace`
+- `tau2_airline`
+- `agentdojo_travel`
 
-每条 JSONL case 都至少包含这些字段：
+The current attack model remains:
 
-- `case_id`: 稳定唯一标识，格式为 `tmc-chordtools-v1-{surface}-{tool}-qXX`
-- `attack_surface`: `predecessor` 或 `successor`
-- `attack_stage`: `pre_tool_dispatch` 或 `post_tool_output`
-- `target_tool` / `target_tool_class`
-- `target_tool_domain`: 如 `web_search`、`finance_data`、`filesystem_ops`
-- `privilege_level`: 如 `external_read`、`local_write`、`network_write`
-- `capability_tags`: 工具能力标签
-- `defense_ready`: 该工具是否已经进入 `tools_in_defense`
-- `recommended_tracks`: 当前建议实验轨道，默认至少含 `attack_core`
-- `query_id` / `query_index` / `user_query`
-- `malicious_tool_name` / `malicious_tool_description`
-- `malicious_argument_schema`: 恶意工具参数语义
-- `expected_outcomes.write_phase`
-- `expected_outcomes.followup_phase`
-- `source_refs`: 所有原始数据文件来源
+- clean tool chain returns structured output
+- a malicious successor/post-processor summarizes that output
+- the summary is written through `direct` or `mem0_additive`
+- future retrieval may reactivate the contaminated memory
+- downstream behavior may drift
 
-## 默认覆盖范围
+## Current Benchmark Files
 
-`v1` 默认从这些原始文件生成：
+### Original ChordTools
 
-- [data/query.json](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/data/query.json)
-- [data/malicious_tools.json](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/data/malicious_tools.json)
-- [data/malicious_tool_arguments.json](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/data/malicious_tool_arguments.json)
-- [data/langchain_tool_map.json](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/data/langchain_tool_map.json)
-- [data/victim_tools](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/data/victim_tools)
-- [data/tools_in_defense](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/data/tools_in_defense)
+- `tmc_chordtools.py`
+- `export_tmc_chordtools.py`
+- `tmc_chordtools_v1.jsonl`
+- `tmc_chordtools_v1_manifest.json`
+- `run_tmc_chordtools.py`
 
-默认完整集会输出：
+### Admission-Aware Memory Scripts
 
-- `benchmark/tmc_chordtools_v1.jsonl`
-- `benchmark/tmc_chordtools_v1_manifest.json`
+- `run_memory_seed_case.py`
+- `run_prompt_family_batch.py`
+- `run_update_conflict_experiment.py`
+- `run_same_payload_source_compare.py`
 
-当前还提供一个人工精选的在线 smoke 子集：
+### New Benchmark v2 Seed Layer
 
-- [`benchmark/tmc_chordtools_online_smoke_v1.jsonl`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/benchmark/tmc_chordtools_online_smoke_v1.jsonl)
-- [`benchmark/tmc_chordtools_online_smoke_v1_manifest.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/benchmark/tmc_chordtools_online_smoke_v1_manifest.json)
+- `tmc_mem0bench_v2.py`
+- `export_tmc_mem0bench_v2.py`
+- `tmc_mem0bench_v2_seed.jsonl`
+- `tmc_mem0bench_v2_seed_manifest.json`
 
-以及根据首轮 smoke run 结果收敛出的 `v2 shortlist`：
+## TMC-Mem0Bench v2 Seed
 
-- [`benchmark/tmc_chordtools_smoke_v2_shortlist.jsonl`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/benchmark/tmc_chordtools_smoke_v2_shortlist.jsonl)
-- [`benchmark/tmc_chordtools_smoke_v2_shortlist_manifest.json`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/benchmark/tmc_chordtools_smoke_v2_shortlist_manifest.json)
+The new benchmark-v2 layer is a schema and case-export layer first, not a
+fully unified multi-domain runner yet.
 
-## 生成命令
+That is intentional.
 
-在 `Chord-main` 根目录执行：
+The goal of this release is to freeze:
 
-```powershell
-python benchmark\export_tmc_chordtools.py
-```
+- a common case schema
+- domain/task adapters
+- realistic attacker-benefit hypotheses
+- realistic domain-specific contaminated payload text
+- manifest counts and placeholder validation
 
-只导出 defense-ready 子集：
+before adding a fully unified multi-domain runner.
 
-```powershell
-python benchmark\export_tmc_chordtools.py --defense-ready-only --output-jsonl benchmark\tmc_chordtools_v1_defense.jsonl --output-manifest benchmark\tmc_chordtools_v1_defense_manifest.json
-```
+## Integrated Domains
 
-只导出 successor 攻击面，并把每个工具缩减成 2 条 query 作为 smoke set：
+### `tau2_retail`
 
-```powershell
-python benchmark\export_tmc_chordtools.py --attack-surface successor --max-queries-per-tool 2 --output-jsonl benchmark\tmc_chordtools_smoke_successor.jsonl --output-manifest benchmark\tmc_chordtools_smoke_successor_manifest.json
-```
+Source:
+- `../tau2-bench-main/data/tau2/domains/retail/tasks.json`
+- `../tau2-bench-main/src/tau2/domains/retail/tools.py`
+- `../tau2-bench-main/data/tau2/domains/retail/policy.md`
 
-导出人工精选 smoke 子集：
+Why it fits:
+- explicit tool chains
+- explicit business workflows
+- realistic exchange / return / address / payment actions
+- natural successor-output contamination target
 
-```powershell
-python benchmark\export_curated_subset.py --subset tmc_chordtools_online_smoke_v1
-```
+### `agentdojo_workspace`
 
-导出 v2 shortlist：
+Source:
+- `../agentdojo-main/src/agentdojo/default_suites/v1/workspace/user_tasks.py`
+- `../agentdojo-main/src/agentdojo/default_suites/v1/workspace/task_suite.py`
 
-```powershell
-python benchmark\export_curated_subset.py --subset tmc_chordtools_smoke_v2_shortlist
-```
+Why it fits:
+- inbox / calendar / file workflows naturally produce tool output
+- easy to model post-processing memory contamination
+- strong fit for follow-up workflow drift
 
-## 当前用途
+### `tau2_airline`
 
-这套 benchmark 现在优先服务 4 件事：
+Source:
+- `../tau2-bench-main/data/tau2/domains/airline/tasks.json`
+- `../tau2-bench-main/src/tau2/domains/airline/tools.py`
+- `../tau2-bench-main/data/tau2/domains/airline/policy.md`
 
-- 固定 `TMC-ChordTools v1` 的 case 边界
-- 为后续真实链 runner 提供统一输入
-- 为消融实验提供稳定 case id
-- 为参数扫描和 defense 评测提供可过滤子集
+Why it fits:
+- policy-heavy workflow
+- explicit reservation / refund / rebooking tool paths
+- strong fit for policy-sensitive memory drift
 
-## Attack-Core Runner
+### `agentdojo_travel`
 
-现在已经提供一个正式 runner：
+Source:
+- `../agentdojo-main/src/agentdojo/default_suites/v1/travel/user_tasks.py`
+- `../agentdojo-main/src/agentdojo/default_suites/v1/tools/travel_booking_client.py`
 
-- [`benchmark/run_tmc_chordtools.py`](/c:/Users/admin/Desktop/对抗攻击/Tool-memory的实验/Chord-main/benchmark/run_tmc_chordtools.py)
+Why it fits:
+- recommendation-to-booking workflow
+- clear post-processing point after ranking / review retrieval
+- natural vendor / property bias scenarios
 
-它会：
+## Case Schema Highlights
 
-- 读取 `tmc_chordtools_v1.jsonl`
-- 按需加载 target tool，而不是一次性把所有工具全实例化
-- 逐 case 调用现有 `Agent`
-- 为每个 case 生成独立日志目录
-- 把结构化结果写入统一的 `results.jsonl`
-- 生成一份 run-level `summary.json`
+Each `v2` case records:
 
-推荐先做 dry-run：
+- `domain`
+- `dataset`
+- `suite_name`
+- `prompt_family`
+- `source_condition`
+- `payload_form`
+- `memory_case_type`
+- `memory_operation`
+- `expected_mem0_admission`
+- `expected_memory_type`
+- `expected_trigger_behavior`
+- `expected_conflict_behavior`
+- `attacker_benefit_category`
+- `attacker_benefit_hypothesis`
+- `attacker_gain_if_activated`
+- `clean_behavior_summary`
+- `contaminated_behavior_summary`
+- `user_task`
+- `future_task`
+- `expected_clean_tools`
+- `payload_text`
 
-```powershell
-python benchmark\run_tmc_chordtools.py --dry-run --max-cases 5
-```
+## Realistic Attacker Benefit Modeling
 
-如果你想先只验证 Python 依赖导入，不触发任何联网初始化：
+This release deliberately avoids the older placeholder-only style such as:
 
-```powershell
-python benchmark\run_tmc_chordtools.py --dry-run --validate-imports --max-cases 5
-```
+- `TASK_TYPE_A`
+- `RULE_X`
+- `TOOL_PREF_Y`
 
-如果你想连工具实例化和活体联网检查也一起做，再加：
+Instead, payload text is domain-specific and concrete. Examples:
 
-```powershell
-python benchmark\run_tmc_chordtools.py --dry-run --validate-tools --max-cases 5
-```
+- retail:
+  - refund suppression
+  - after-sales workflow manipulation
+  - address-change or reroute abuse
+- airline:
+  - unauthorized rebooking or upgrade steering
+  - refund manipulation before clean policy review
+  - itinerary-information exposure during support handling
+- workspace:
+  - verification-code, email, or calendar detail leakage
+  - malicious outbound follow-up
+  - unauthorized meeting modification
+- travel:
+  - high-margin hotel or supplier steering
+  - itinerary-plan leakage
+  - booking-path manipulation after threshold satisfaction
 
-解释：
+The export layer performs a placeholder audit and fails if old placeholder
+tokens leak into the new `v2` payloads.
 
-- `--validate-imports`: 检查包和模块是否可导入
-- `--validate-tools`: 真正实例化工具，某些工具会在这一步访问外部服务或公共站点
+## Export Commands
 
-只跑 successor 的 smoke set：
-
-```powershell
-python benchmark\run_tmc_chordtools.py --attack-surface successor --max-cases 3
-```
-
-只跑 defense-ready 子集中的 `wikipedia`：
-
-```powershell
-python benchmark\run_tmc_chordtools.py --defense-ready-only --target-tools wikipedia --max-cases 2
-```
-
-runner 默认输出到：
-
-- `output/benchmark_runs/<timestamp>/run_manifest.json`
-- `output/benchmark_runs/<timestamp>/results.jsonl`
-- `output/benchmark_runs/<timestamp>/summary.json`
-- `output/benchmark_runs/<timestamp>/case_logs/<case_id>/...`
-
-## Attack-Core Stability
-
-对多轮 `benchmark_runs` 做稳定性汇总：
-
-```powershell
-python benchmark\summarize_attack_core.py --case-ids tmc-chordtools-v1-predecessor-arxiv-q01,tmc-chordtools-v1-successor-arxiv-q01 --max-runs 10
-```
-
-脚本会输出：
-
-- `output/benchmark_analysis/attack_core_stability_<timestamp>.json`
-- `output/benchmark_analysis/attack_core_stability_<timestamp>.csv`
-
-其中：
-
-- `json` 适合看每个 `case` 的完成轮数、失败轮数、`HSR/HASR/PSR` 平均值
-- `csv` 适合看逐轮明细，方便手动筛查异常 run
-
-推荐先跑这版人工精选 smoke set：
+Export the full seed set:
 
 ```powershell
-python benchmark\run_tmc_chordtools.py --case-file benchmark\tmc_chordtools_online_smoke_v1.jsonl --dry-run --validate-imports
+python benchmark\export_tmc_mem0bench_v2.py
 ```
 
-如果这一步正常，再做真实小规模执行：
+Export a smaller subset:
 
 ```powershell
-python benchmark\run_tmc_chordtools.py --case-file benchmark\tmc_chordtools_online_smoke_v1.jsonl --max-cases 2 --model gpt-4o-mini
+python benchmark\export_tmc_mem0bench_v2.py --domains tau2_retail,agentdojo_workspace --prompt-families existing_prompt_style,preference_style,update_style
 ```
 
-在完成首轮 smoke run 之后，推荐切到 `v2 shortlist`：
+The exporter writes:
 
-```powershell
-python benchmark\run_tmc_chordtools.py --case-file benchmark\tmc_chordtools_smoke_v2_shortlist.jsonl --dry-run --validate-imports
-python benchmark\run_tmc_chordtools.py --case-file benchmark\tmc_chordtools_smoke_v2_shortlist.jsonl --max-cases 4 --model gpt-4o-mini
-```
+- `benchmark/tmc_mem0bench_v2_seed.jsonl`
+- `benchmark/tmc_mem0bench_v2_seed_manifest.json`
 
-## Benchmark 依赖说明
+## Current Boundary
 
-你之前跑真实链主实验时装的是最小依赖；benchmark runner 覆盖的工具更多，通常还需要完整工具依赖。
+The new `v2` integration layer currently freezes:
 
-最稳的方式是在 `Chord-main` 根目录安装项目依赖：
+- multi-domain case schema
+- multi-domain seed cases
+- realistic benefit-aware payload text
+- export and manifest tooling
 
-```powershell
-pip install -e .
-```
+It does not yet provide a single runner that executes all four external domains
+through the current admission-aware memory pipeline.
 
-如果你不想整包安装，至少要补齐当前 benchmark 会用到的工具包，例如：
-
-```powershell
-pip install arxiv amadeus pyowm praw semanticscholar stackapi mediawikiapi wikibase-rest-api-client yfinance
-```
-
-## 下一步建议
-
-这个 benchmark 完成后，后续应该按这个顺序推进：
-
-1. 让真实链 runner 直接读 `tmc_chordtools_v1.jsonl`
-2. 先做 `attack_core` 的小规模复现实验
-3. 再补 `defense_ready` 子集的正式对照
-4. 最后再做消融与参数扫描
+That runner should be added after the benchmark-v2 schema and case inventory are
+stable.

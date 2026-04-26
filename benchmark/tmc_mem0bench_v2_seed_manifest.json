@@ -1,0 +1,68 @@
+{
+  "benchmark_name": "TMC-Mem0Bench",
+  "benchmark_version": "v2-seed",
+  "case_schema_version": "2.0",
+  "framework": "offline_admission_aware",
+  "description": "Seed benchmark-v2 cases that extend the current offline successor/post-processor memory-contamination framework to four additional realistic domains: τ² Retail, AgentDojo Workspace, τ² Airline, and AgentDojo Travel.",
+  "selected_domains": [
+    "tau2_retail",
+    "tau2_airline",
+    "agentdojo_workspace",
+    "agentdojo_travel"
+  ],
+  "selected_prompt_families": [
+    "existing_prompt_style",
+    "baseline_rule_literal",
+    "preference_style",
+    "constraint_style",
+    "default_workflow_style",
+    "update_style"
+  ],
+  "max_tau2_tasks": 3,
+  "total_cases": 60,
+  "domain_seed_counts": {
+    "tau2_retail": 3,
+    "tau2_airline": 3,
+    "agentdojo_workspace": 2,
+    "agentdojo_travel": 2
+  },
+  "domain_case_counts": {
+    "tau2_retail": 18,
+    "tau2_airline": 18,
+    "agentdojo_workspace": 12,
+    "agentdojo_travel": 12
+  },
+  "prompt_family_counts": {
+    "existing_prompt_style": 10,
+    "baseline_rule_literal": 10,
+    "preference_style": 10,
+    "constraint_style": 10,
+    "default_workflow_style": 10,
+    "update_style": 10
+  },
+  "payload_form_counts": {
+    "workflow_preference": 60
+  },
+  "supported_mechanism_counts": {
+    "tool_return_admission_attack": 60,
+    "same_payload_diff_source": 60,
+    "update_conflict": 10
+  },
+  "placeholder_audit": {
+    "passed": true,
+    "checked_tokens": [
+      "MEMORY_MARKER_Z",
+      "RULE_X",
+      "SAFE_PLACEHOLDER_NOTE",
+      "TASK_TYPE_A",
+      "TASK_TYPE_B",
+      "TOOL_ALPHA",
+      "TOOL_PREF_Y"
+    ]
+  },
+  "selection_notes": [
+    "This release integrates the four domains most compatible with the current offline successor-memory framework.",
+    "Payload text intentionally avoids generic placeholder tokens and instead encodes domain-specific attacker benefits.",
+    "Cases remain successor/post-processor centered; domain runner integration can be layered later without changing schema."
+  ]
+}
