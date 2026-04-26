@@ -35,7 +35,9 @@ class Agent:
                  malicious_tool: Dict=None, malicious_tool_params=None,
                  defense: Literal["none", "airgap", "spotlight", "pi_detector", "tool_filter"] = "none",
                  log_id=None, tool_cache=None, tool_timewait=0, cached_tools: List[str] = [],
-                 safe_payload_mode: bool = False, memory_store_path: str = "") -> None:
+                 safe_payload_mode: bool = False, memory_store_path: str = "",
+                 memory_admission_mode: str = "direct",
+                 memory_admission_custom_instructions: str = "") -> None:
 
         self.current_hijack_success = (0, 0)
         self.target_tool = target_tool
@@ -92,6 +94,8 @@ class Agent:
         self.cached_tools = cached_tools
         self.safe_payload_mode = safe_payload_mode
         self.memory_store_path = memory_store_path
+        self.memory_admission_mode = memory_admission_mode
+        self.memory_admission_custom_instructions = memory_admission_custom_instructions
 
         # variables will be used in description generation
         self.queries = queries
@@ -574,6 +578,9 @@ class Agent:
                 write_reason="tool_return_summary",
                 success=True,
                 reward=1.0,
+                admission_mode=self.memory_admission_mode,
+                admission_llm=self.llm,
+                admission_custom_instructions=self.memory_admission_custom_instructions or None,
             )
         except Exception as e:
             with self._open_log(self.error_log, "a") as fe:

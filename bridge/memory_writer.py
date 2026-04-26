@@ -106,6 +106,53 @@ def build_memory_record(
     }
 
 
+def build_admitted_memory_record(
+    instruction,
+    actions,
+    raw_tool_output,
+    source_tool,
+    target_tool,
+    admitted_memory,
+    write_reason="tool_return_summary",
+    success=True,
+    reward=1.0,
+    record_id=None,
+    timestamp=None,
+    admission_mode="mem0_additive",
+):
+    """Build a record whose final memory text comes from an admission layer."""
+    record = build_memory_record(
+        instruction=instruction,
+        actions=actions,
+        raw_tool_output=raw_tool_output,
+        source_tool=source_tool,
+        target_tool=target_tool,
+        write_reason=write_reason,
+        success=success,
+        reward=reward,
+        record_id=record_id,
+        timestamp=timestamp,
+    )
+    admitted_text = " ".join(str(admitted_memory.get("text", "")).split())
+    record["OriginalSanitizedMemoryText"] = record.get("SanitizedMemoryText", "")
+    record["OriginalResp"] = record.get("resp", "")
+    record["SanitizedMemoryText"] = admitted_text
+    record["resp"] = admitted_text or record.get("resp", "")
+    if not admitted_memory.get("is_attack_memory", False):
+        record["Marker"] = ""
+        record["TaskType"] = ""
+        record["ToolPreference"] = ""
+    record["AttributedTo"] = str(admitted_memory.get("attributed_to") or "")
+    record["LinkedMemoryIds"] = list(admitted_memory.get("linked_memory_ids") or [])
+    record["AdmissionHash"] = str(admitted_memory.get("hash") or "")
+    record["AdmissionMode"] = admission_mode
+    record["AdmissionPassed"] = True
+    record["AdmissionCategory"] = str(admitted_memory.get("category") or "")
+    record["AdmissionSignals"] = dict(admitted_memory.get("signals") or {})
+    record["IsAttackMemory"] = bool(admitted_memory.get("is_attack_memory", False))
+    return record
+
+
 def append_memory_record(store_path, record):
     """Append a record to the JSON memory store."""
     records = load_memory_store(store_path)
@@ -125,6 +172,10 @@ def write_memory_from_tool_output(
     success=True,
     reward=1.0,
     write_policy="allow_all",
+    admission_mode="direct",
+    admission_llm=None,
+    admission_context=None,
+    admission_custom_instructions=None,
 ):
     """Parse successor output and append a record when a memory candidate exists."""
     payload = parse_tool_output(raw_tool_output)
@@ -135,15 +186,76 @@ def write_memory_from_tool_output(
     if write_policy == "reject_marker_records" and payload.get("marker") == "MEMORY_MARKER_Z":
         return {"written": False, "reason": "blocked_by_write_policy", "marker": payload.get("marker")}
 
-    record = build_memory_record(
+    if admission_mode == "direct":
+        record = build_memory_record(
+            instruction=instruction,
+            actions=actions,
+            raw_tool_output=payload,
+            source_tool=source_tool,
+            target_tool=target_tool,
+            write_reason=write_reason,
+            success=success,
+            reward=reward,
+        )
+        append_memory_record(store_path, record)
+        return {"written": True, "record": record}
+
+    if admission_mode != "mem0_additive":
+        return {"written": False, "reason": f"unsupported_admission_mode:{admission_mode}"}
+
+    if admission_llm is None:
+        return {"written": False, "reason": "admission_llm_missing"}
+
+    from .mem0_admission_adapter import admit_tool_output
+
+    existing_records = load_memory_store(store_path)
+    admission = admit_tool_output(
+        llm=admission_llm,
         instruction=instruction,
-        actions=actions,
-        raw_tool_output=payload,
+        actions=list(actions or []),
+        payload=payload,
         source_tool=source_tool,
         target_tool=target_tool,
-        write_reason=write_reason,
-        success=success,
-        reward=reward,
+        existing_records=existing_records,
+        admission_context=admission_context,
+        custom_instructions=admission_custom_instructions,
     )
-    append_memory_record(store_path, record)
-    return {"written": True, "record": record}
+    admitted_memories = admission.get("admitted_memories", [])
+    if not admitted_memories:
+        all_admitted = admission.get("all_admitted_memories", [])
+        return {
+            "written": False,
+            "reason": "no_attack_memories_after_filter" if all_admitted else "no_admitted_memories",
+            "admission": admission,
+        }
+
+    records = list(existing_records)
+    new_records = []
+    for index, admitted_memory in enumerate(admitted_memories):
+        record = build_admitted_memory_record(
+            instruction=instruction,
+            actions=actions,
+            raw_tool_output=payload,
+            source_tool=source_tool,
+            target_tool=target_tool,
+            admitted_memory=admitted_memory,
+            write_reason=write_reason,
+            success=success,
+            reward=reward,
+            record_id="mem_" + uuid.uuid4().hex[:10],
+            admission_mode=admission_mode,
+        )
+        record["AdmissionIndex"] = index
+        record["AdmissionSourceTool"] = source_tool
+        record["AdmissionTargetTool"] = target_tool
+        record["AdmissionRawOutput"] = admission.get("raw_response", "")
+        records.append(record)
+        new_records.append(record)
+
+    save_memory_store(store_path, records)
+    return {
+        "written": True,
+        "record": new_records[0],
+        "records": new_records,
+        "admission": admission,
+    }
