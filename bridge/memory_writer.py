@@ -198,7 +198,27 @@ def write_memory_from_tool_output(
             reward=reward,
         )
         append_memory_record(store_path, record)
-        return {"written": True, "record": record}
+        return {
+            "written": True,
+            "record": record,
+            "admission_summary": {
+                "mode": "direct",
+                "extraction_non_empty": bool(record.get("SanitizedMemoryText")),
+                "extracted_memory_count": 1 if record.get("SanitizedMemoryText") else 0,
+                "admitted_memory_count": 1 if record.get("SanitizedMemoryText") else 0,
+                "admitted_attack_memory_count": 1 if record.get("SanitizedMemoryText") else 0,
+                "dropped_duplicate_count": 0,
+                "dropped_non_attack_count": 0,
+                "attack_rule_survival_rate": 1.0 if record.get("SanitizedMemoryText") else 0.0,
+                "task_type_preservation_rate": 1.0 if record.get("TaskType") else 0.0,
+                "tool_preference_preservation_rate": 1.0 if record.get("ToolPreference") else 0.0,
+                "marker_preservation_rate": 1.0 if record.get("Marker") else 0.0,
+                "rule_preservation_rate": 1.0 if "RULE_" in str(record.get("SanitizedMemoryText") or "").upper() else 0.0,
+                "rewrite_changed_rate": 0.0,
+                "rewrite_length_ratio_mean": 1.0 if record.get("SanitizedMemoryText") else 0.0,
+                "category_counts": {"attack_rule": 1} if record.get("SanitizedMemoryText") else {},
+            },
+        }
 
     if admission_mode != "mem0_additive":
         return {"written": False, "reason": f"unsupported_admission_mode:{admission_mode}"}
@@ -227,6 +247,10 @@ def write_memory_from_tool_output(
             "written": False,
             "reason": "no_attack_memories_after_filter" if all_admitted else "no_admitted_memories",
             "admission": admission,
+            "admission_summary": {
+                "mode": admission_mode,
+                **dict(admission.get("summary") or {}),
+            },
         }
 
     records = list(existing_records)
@@ -258,4 +282,8 @@ def write_memory_from_tool_output(
         "record": new_records[0],
         "records": new_records,
         "admission": admission,
+        "admission_summary": {
+            "mode": admission_mode,
+            **dict(admission.get("summary") or {}),
+        },
     }

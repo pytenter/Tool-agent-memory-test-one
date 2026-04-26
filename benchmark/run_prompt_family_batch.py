@@ -27,6 +27,21 @@ SUMMARY_METRICS = [
     "Behavior Drift Rate",
     "Tool Preference Shift",
 ]
+ADMISSION_METRICS = [
+    "extraction_non_empty",
+    "extracted_memory_count",
+    "admitted_memory_count",
+    "admitted_attack_memory_count",
+    "dropped_duplicate_count",
+    "dropped_non_attack_count",
+    "attack_rule_survival_rate",
+    "task_type_preservation_rate",
+    "tool_preference_preservation_rate",
+    "marker_preservation_rate",
+    "rule_preservation_rate",
+    "rewrite_changed_rate",
+    "rewrite_length_ratio_mean",
+]
 
 
 def _parse_list_arg(raw: str, allowed: List[str], label: str) -> List[str]:
@@ -141,6 +156,16 @@ def _extract_write_snapshot(summary: Dict[str, object]) -> Dict[str, object]:
     }
 
 
+def _extract_admission_block(summary: Dict[str, object], scenario: str) -> Dict[str, object]:
+    top_level = ((summary.get("admission_metrics") or {}).get(scenario) or {})
+    if top_level:
+        block = top_level
+    else:
+        write_phase = (((summary.get("write_phase") or {}).get(scenario) or {}).get("memory_write") or {})
+        block = (write_phase.get("admission_summary") or {})
+    return {name: block.get(name) for name in ADMISSION_METRICS + ["mode", "category_counts"]}
+
+
 def _load_experiment_summary(output_dir: Path) -> Dict[str, object]:
     summary_path = output_dir / "memory_seed_summary.json"
     return json.loads(summary_path.read_text(encoding="utf-8"))
@@ -161,10 +186,17 @@ def _flatten_csv_rows(rows: List[Dict[str, object]]) -> List[Dict[str, object]]:
             "admission_category": row["write_snapshot"]["admission_category"],
             "is_attack_memory": row["write_snapshot"]["is_attack_memory"],
             "attributed_to": row["write_snapshot"]["attributed_to"],
+            "prompt_family_description": row["prompt_config"].get("description"),
+            "admission_mode_config": row["admission_config"].get("mode"),
         }
         for scenario in SUMMARY_SCENARIOS:
             for metric_name, metric_value in row["scenario_metrics"][scenario].items():
                 base[f"{scenario}::{metric_name}"] = metric_value
+            for metric_name, metric_value in row["admission_metrics"][scenario].items():
+                if metric_name == "category_counts" and isinstance(metric_value, dict):
+                    base[f"{scenario}::category_counts_json"] = json.dumps(metric_value, ensure_ascii=False, sort_keys=True)
+                else:
+                    base[f"{scenario}::admission::{metric_name}"] = metric_value
         flat_rows.append(base)
     return flat_rows
 
@@ -187,6 +219,7 @@ def _build_pairwise_comparisons(rows: List[Dict[str, object]]) -> List[Dict[str,
             "direct_write_snapshot": direct_row["write_snapshot"],
             "mem0_write_snapshot": mem0_row["write_snapshot"],
             "metric_deltas": {},
+            "admission_metric_deltas": {},
         }
         for scenario in SUMMARY_SCENARIOS:
             comparison["metric_deltas"][scenario] = {}
@@ -197,6 +230,14 @@ def _build_pairwise_comparisons(rows: List[Dict[str, object]]) -> List[Dict[str,
                     comparison["metric_deltas"][scenario][metric_name] = round(mem0_value - direct_value, 4)
                 else:
                     comparison["metric_deltas"][scenario][metric_name] = None
+            comparison["admission_metric_deltas"][scenario] = {}
+            for metric_name in ADMISSION_METRICS:
+                direct_value = direct_row["admission_metrics"][scenario].get(metric_name)
+                mem0_value = mem0_row["admission_metrics"][scenario].get(metric_name)
+                if isinstance(direct_value, (int, float)) and isinstance(mem0_value, (int, float)):
+                    comparison["admission_metric_deltas"][scenario][metric_name] = round(mem0_value - direct_value, 4)
+                else:
+                    comparison["admission_metric_deltas"][scenario][metric_name] = None
         comparisons.append(comparison)
     return comparisons
 
@@ -304,6 +345,9 @@ def main() -> None:
                     "write_snapshot": _extract_write_snapshot(summary),
                     "scenario_metrics": {
                         scenario: _extract_metric_block(summary, scenario) for scenario in SUMMARY_SCENARIOS
+                    },
+                    "admission_metrics": {
+                        scenario: _extract_admission_block(summary, scenario) for scenario in SUMMARY_SCENARIOS
                     },
                     "prompt_config": summary.get("prompt_config", {}),
                     "admission_config": summary.get("admission_config", {}),

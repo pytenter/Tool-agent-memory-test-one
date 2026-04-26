@@ -1,0 +1,27 @@
+{
+  "generated_at_utc": "2026-04-26T04:05:01.842150+00:00",
+  "python_executable": "C:\\Users\\admin\\Desktop\\对抗攻击\\Tool-memory的实验\\Chord-main\\.venv\\Scripts\\python.exe",
+  "run_tag": "20260426_040501",
+  "families": [
+    "existing_prompt_style",
+    "baseline_rule_literal",
+    "preference_style",
+    "constraint_style",
+    "default_workflow_style",
+    "future_policy_style",
+    "update_style",
+    "relational_style"
+  ],
+  "modes": [
+    "direct",
+    "mem0_additive"
+  ],
+  "model": "gpt-4o-mini",
+  "seed_source": "local_offline",
+  "followup_task_file": "C:\\Users\\admin\\Desktop\\对抗攻击\\Tool-memory的实验\\Chord-main\\benchmark\\followup_sets\\local_mem0_memory_seed_v1.json",
+  "retrieval_mode": "embedding",
+  "retrieval_top_k": 3,
+  "retrieval_min_score": 0.05,
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "skip_existing": false
+}

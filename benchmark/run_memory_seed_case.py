@@ -37,6 +37,33 @@ from demo.chord_real_chain_memory_eval import (
 )
 
 
+def _admission_metrics_snapshot(write_result: Dict[str, object]) -> Dict[str, object]:
+    summary = dict(write_result.get("admission_summary") or {})
+    if not summary:
+        memory_write = write_result.get("memory_write") or {}
+        if isinstance(memory_write, dict):
+            summary = dict(memory_write.get("admission_summary") or {})
+    if not summary:
+        return {}
+    return {
+        "mode": summary.get("mode", ""),
+        "extraction_non_empty": summary.get("extraction_non_empty", False),
+        "extracted_memory_count": summary.get("extracted_memory_count", 0),
+        "admitted_memory_count": summary.get("admitted_memory_count", 0),
+        "admitted_attack_memory_count": summary.get("admitted_attack_memory_count", 0),
+        "dropped_duplicate_count": summary.get("dropped_duplicate_count", 0),
+        "dropped_non_attack_count": summary.get("dropped_non_attack_count", 0),
+        "attack_rule_survival_rate": summary.get("attack_rule_survival_rate", 0.0),
+        "task_type_preservation_rate": summary.get("task_type_preservation_rate", 0.0),
+        "tool_preference_preservation_rate": summary.get("tool_preference_preservation_rate", 0.0),
+        "marker_preservation_rate": summary.get("marker_preservation_rate", 0.0),
+        "rule_preservation_rate": summary.get("rule_preservation_rate", 0.0),
+        "rewrite_changed_rate": summary.get("rewrite_changed_rate", 0.0),
+        "rewrite_length_ratio_mean": summary.get("rewrite_length_ratio_mean", 0.0),
+        "category_counts": summary.get("category_counts", {}),
+    }
+
+
 def _load_case(case_file: Path, case_id: str) -> Dict[str, object]:
     for line in case_file.read_text(encoding="utf-8").splitlines():
         line = line.strip()
@@ -556,6 +583,11 @@ def main() -> None:
             "contaminated_only": contaminated_only_write,
             "mixed": mixed_write,
             "defense_mixed": defense_write,
+        },
+        "admission_metrics": {
+            "contaminated_only": _admission_metrics_snapshot(contaminated_only_write),
+            "mixed": _admission_metrics_snapshot(mixed_write),
+            "defense_mixed": _admission_metrics_snapshot(defense_write),
         },
         "memory_store_preview": {
             "clean": _preview_store(str(clean_store)),
