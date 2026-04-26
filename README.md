@@ -1,6 +1,11 @@
-# Chord-main
+# MemGate
 
 This repository studies tool-output to long-term memory contamination, with a current focus on Mem0-style memory admission.
+
+Compatibility note:
+
+- The project name is now `MemGate`.
+- The internal Python package path remains `chord/` for compatibility with the current codebase and experiment scripts.
 
 Current core pipeline:
 

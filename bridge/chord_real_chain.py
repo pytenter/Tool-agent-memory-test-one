@@ -1,13 +1,13 @@
-"""Real-chain helpers that connect bridge logic to Chord Agent and TestingAgent."""
+"""Real-chain helpers that connect bridge logic to the MemGate agent and TestingAgent."""
 
 import json
 from typing import Dict, List
 
 
 def run_agent_pollute_write(agent, limit: int = 1) -> Dict:
-    """Run a Chord Agent graph directly and return the final state."""
+    """Run a MemGate agent graph directly and return the final state."""
     initial_state = {
-        "messages": [("user", f"Chord Start testing {agent.target_tool_info['name']}")],
+        "messages": [("user", f"MemGate Start testing {agent.target_tool_info['name']}")],
         "limit": limit,
         "hijack_log": [],
         "harvest_log": {},
@@ -20,7 +20,7 @@ def run_agent_pollute_write(agent, limit: int = 1) -> Dict:
 
 
 def extract_pollute_write_summary(final_state: Dict) -> Dict:
-    """Normalize the write-phase result from a Chord Agent final state."""
+    """Normalize the write-phase result from a MemGate agent final state."""
     pollute_log = final_state.get("pollute_log", []) or []
     if not pollute_log:
         return {"written": False, "reason": "no_pollute_log"}

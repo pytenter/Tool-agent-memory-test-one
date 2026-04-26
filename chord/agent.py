@@ -450,7 +450,7 @@ class Agent:
         self.limit = limit
         with self._open_log(self.log, "a") as f:
             f.write(f"[+]Start testing target tool: {self.target_tool_info['name']}\n")
-        print_stream(self.graph.stream({"messages": [("user", f"Chord Start testing {self.target_tool_info['name']}")], "limit": limit, "hijack_log": [], "harvest_log": {}, "pollute_log": []}, stream_mode="values"))
+        print_stream(self.graph.stream({"messages": [("user", f"MemGate Start testing {self.target_tool_info['name']}")], "limit": limit, "hijack_log": [], "harvest_log": {}, "pollute_log": []}, stream_mode="values"))
 
     def hijack_success(self, state: AgentState):
         limit = len(self.generated_tools)

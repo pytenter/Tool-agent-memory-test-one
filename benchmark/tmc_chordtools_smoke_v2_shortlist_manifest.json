@@ -63,7 +63,7 @@
       }
     ]
   },
-  "source_case_file": "C:\\Users\\admin\\Desktop\\对抗攻击\\Tool-memory的实验\\Chord-main\\benchmark\\tmc_chordtools_v1.jsonl",
+  "source_case_file": "C:\\Users\\admin\\Desktop\\对抗攻击\\Tool-memory的实验\\MemGate\\benchmark\\tmc_chordtools_v1.jsonl",
   "selected_case_count": 4,
   "selected_case_ids": [
     "tmc-chordtools-v1-successor-wikipedia-q02",

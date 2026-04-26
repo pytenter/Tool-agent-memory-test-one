@@ -1,4 +1,4 @@
-"""Real-chain memory contamination evaluation using Chord Agent and TestingAgent."""
+"""Real-chain memory contamination evaluation using the MemGate agent and TestingAgent."""
 
 import argparse
 import json

@@ -118,7 +118,7 @@ def _build_seed_write_query(case: Dict[str, object]) -> str:
 
 def _build_local_seed_descriptor() -> Dict[str, object]:
     return {
-        "benchmark_name": "ChordMemorySeed",
+        "benchmark_name": "MemGateMemorySeed",
         "benchmark_version": "v1",
         "case_schema_version": "1.0",
         "framework": "langchain",
