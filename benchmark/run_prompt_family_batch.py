@@ -18,6 +18,7 @@ from benchmark.prompt_families import get_prompt_family_descriptions, list_promp
 
 
 DEFAULT_MODES = ["direct", "mem0_additive"]
+ALLOWED_MODES = ["direct", "mem0_additive", "mem0_full"]
 SUMMARY_SCENARIOS = ["contaminated_only", "mixed", "defense_mixed"]
 SUMMARY_METRICS = [
     "Memory Write Success Rate",
@@ -41,6 +42,14 @@ ADMISSION_METRICS = [
     "rule_preservation_rate",
     "rewrite_changed_rate",
     "rewrite_length_ratio_mean",
+    "update_operation_count",
+    "add_count",
+    "update_count",
+    "delete_count",
+    "noop_count",
+    "persisted_memory_count",
+    "persisted_attack_memory_count",
+    "final_attack_persistence_rate",
 ]
 
 
@@ -254,7 +263,7 @@ def main() -> None:
         "--modes",
         type=str,
         default=",".join(DEFAULT_MODES),
-        help="Comma-separated admission modes. Use direct,mem0_additive for comparison.",
+        help="Comma-separated admission modes. Use direct,mem0_additive,mem0_full for comparison.",
     )
     parser.add_argument("--model", type=str, default="gpt-4o-mini")
     parser.add_argument("--seed-source", type=str, default="local_offline", choices=["local_offline", "benchmark_case"])
@@ -286,7 +295,7 @@ def main() -> None:
     args = parser.parse_args()
 
     families = _parse_list_arg(args.families, list_prompt_families(), "families")
-    modes = _parse_list_arg(args.modes, DEFAULT_MODES, "modes")
+    modes = _parse_list_arg(args.modes, ALLOWED_MODES, "modes")
     run_tag = args.run_tag or _utc_timestamp()
     batch_dir = args.output_root / run_tag
     batch_dir.mkdir(parents=True, exist_ok=True)

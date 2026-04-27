@@ -220,15 +220,104 @@ def write_memory_from_tool_output(
             },
         }
 
-    if admission_mode != "mem0_additive":
+    if admission_mode not in {"mem0_additive", "mem0_full"}:
         return {"written": False, "reason": f"unsupported_admission_mode:{admission_mode}"}
 
     if admission_llm is None:
         return {"written": False, "reason": "admission_llm_missing"}
 
+    existing_records = load_memory_store(store_path)
+    if admission_mode == "mem0_full":
+        from .mem0_admission_adapter import admit_tool_output_full
+
+        admission = admit_tool_output_full(
+            llm=admission_llm,
+            instruction=instruction,
+            actions=list(actions or []),
+            payload=payload,
+            source_tool=source_tool,
+            target_tool=target_tool,
+            existing_records=existing_records,
+            admission_context=admission_context,
+            custom_instructions=admission_custom_instructions,
+        )
+        persisted_memories = admission.get("persisted_memories", [])
+        admitted_memories = admission.get("admitted_memories", [])
+        if not persisted_memories:
+            all_extracted = admission.get("all_extracted_memories", [])
+            return {
+                "written": False,
+                "persisted_any_memory": False,
+                "reason": "no_persisted_memories_after_update" if all_extracted else "no_admitted_memories",
+                "admission": admission,
+                "admission_summary": {
+                    "mode": admission_mode,
+                    **dict(admission.get("summary") or {}),
+                },
+            }
+
+        records = list(existing_records)
+        deleted_ids = {
+            str(operation.get("id") or "")
+            for operation in admission.get("update_operations", [])
+            if str(operation.get("event") or "").upper() == "DELETE"
+        }
+        updated_ids = {
+            str(memory.get("update_id") or "")
+            for memory in persisted_memories
+            if str(memory.get("update_event") or "").upper() == "UPDATE"
+        }
+        remove_ids = {item for item in deleted_ids.union(updated_ids) if item}
+        if remove_ids:
+            records = [record for record in records if str(record.get("Id") or "") not in remove_ids]
+
+        new_records = []
+        existing_ids = {str(record.get("Id") or "") for record in existing_records}
+        for index, admitted_memory in enumerate(persisted_memories):
+            event = str(admitted_memory.get("update_event") or "ADD").upper()
+            update_id = str(admitted_memory.get("update_id") or "")
+            record_id = update_id if event == "UPDATE" and update_id in existing_ids else ""
+            record = build_admitted_memory_record(
+                instruction=instruction,
+                actions=actions,
+                raw_tool_output=payload,
+                source_tool=source_tool,
+                target_tool=target_tool,
+                admitted_memory=admitted_memory,
+                write_reason=write_reason,
+                success=success,
+                reward=reward,
+                record_id=record_id or "mem_" + uuid.uuid4().hex[:10],
+                admission_mode=admission_mode,
+            )
+            record["AdmissionIndex"] = index
+            record["AdmissionSourceTool"] = source_tool
+            record["AdmissionTargetTool"] = target_tool
+            record["AdmissionRawOutput"] = admission.get("raw_response", "")
+            record["AdmissionUpdateRawOutput"] = admission.get("update_raw_response", "")
+            record["AdmissionUpdateEvent"] = event
+            record["AdmissionOldMemory"] = str(admitted_memory.get("old_memory") or "")
+            records.append(record)
+            new_records.append(record)
+
+        save_memory_store(store_path, records)
+        attack_records = [record for record in new_records if record.get("IsAttackMemory")]
+        return {
+            "written": bool(attack_records),
+            "persisted_any_memory": bool(new_records),
+            "reason": "" if attack_records else "no_attack_memories_after_update",
+            "record": attack_records[0] if attack_records else new_records[0],
+            "records": new_records,
+            "attack_records": attack_records,
+            "admission": admission,
+            "admission_summary": {
+                "mode": admission_mode,
+                **dict(admission.get("summary") or {}),
+            },
+        }
+
     from .mem0_admission_adapter import admit_tool_output
 
-    existing_records = load_memory_store(store_path)
     admission = admit_tool_output(
         llm=admission_llm,
         instruction=instruction,

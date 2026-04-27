@@ -251,7 +251,7 @@ def _write_doc(output_dir: Path, summary: Dict[str, object]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--admission-mode", choices=["direct", "mem0_additive"], default="direct")
+    parser.add_argument("--admission-mode", choices=["direct", "mem0_additive", "mem0_full"], default="direct")
     parser.add_argument("--model", type=str, default="gpt-4o-mini")
     parser.add_argument("--admission-custom-instructions", type=str, default="")
     parser.add_argument("--memory-forms", type=str, default="", help="Comma-separated memory forms to run.")
@@ -266,7 +266,7 @@ def main() -> None:
     args = parser.parse_args()
 
     admission_llm = None
-    if args.admission_mode == "mem0_additive":
+    if args.admission_mode in {"mem0_additive", "mem0_full"}:
         from chord.model_provider import create_chat_openai
 
         admission_llm = create_chat_openai(model=args.model, temperature=0)

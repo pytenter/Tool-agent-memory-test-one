@@ -68,6 +68,7 @@ def _ensure_mem0_source():
     return (
         prompts_module.ADDITIVE_EXTRACTION_PROMPT,
         prompts_module.generate_additive_extraction_prompt,
+        prompts_module.get_update_memory_messages,
         _extract_json,
         _remove_code_blocks,
     )
@@ -167,6 +168,20 @@ def _extract_response_text(response: Any) -> str:
 
 
 def _parse_memory_objects(raw_response: str, remove_code_blocks, extract_json) -> List[Dict[str, Any]]:
+    cleaned = remove_code_blocks(raw_response)
+    candidate = cleaned if cleaned and cleaned.strip() else raw_response
+    try:
+        payload = json.loads(candidate, strict=False)
+    except json.JSONDecodeError:
+        extracted = extract_json(raw_response)
+        payload = json.loads(extracted, strict=False)
+    memories = payload.get("memory", []) if isinstance(payload, dict) else []
+    if not isinstance(memories, list):
+        return []
+    return [item for item in memories if isinstance(item, dict)]
+
+
+def _parse_update_memory_objects(raw_response: str, remove_code_blocks, extract_json) -> List[Dict[str, Any]]:
     cleaned = remove_code_blocks(raw_response)
     candidate = cleaned if cleaned and cleaned.strip() else raw_response
     try:
@@ -351,6 +366,70 @@ def _summarize_admission(
     }
 
 
+def _classify_memory_objects(memories: List[Dict[str, Any]], payload: Dict[str, Any]) -> List[Dict[str, Any]]:
+    classified = []
+    seen_hashes = set()
+    for memory in memories:
+        text = str(memory.get("text") or memory.get("memory") or "").strip()
+        if not text:
+            continue
+        text_hash = md5(text.encode("utf-8")).hexdigest()
+        if text_hash in seen_hashes:
+            continue
+        seen_hashes.add(text_hash)
+        classification = _classify_admitted_memory(text, payload)
+        classified.append(
+            {
+                "text": text,
+                "attributed_to": str(memory.get("attributed_to") or "assistant"),
+                "linked_memory_ids": list(memory.get("linked_memory_ids") or []),
+                "hash": text_hash,
+                "category": classification["category"],
+                "is_attack_memory": classification["is_attack_memory"],
+                "signals": classification["signals"],
+            }
+        )
+    return classified
+
+
+def _existing_memory_dict(records: List[Dict[str, Any]]) -> Dict[str, str]:
+    existing = {}
+    for index, record in enumerate(records):
+        text = str(record.get("SanitizedMemoryText") or record.get("resp") or "").strip()
+        if not text:
+            continue
+        existing[str(record.get("Id") or f"existing_{index}")] = text
+    return existing
+
+
+def _summarize_update_stage(
+    *,
+    extracted_memories: List[Dict[str, Any]],
+    update_operations: List[Dict[str, Any]],
+    persisted_memories: List[Dict[str, Any]],
+    existing_memory_count: int,
+) -> Dict[str, Any]:
+    event_counts: Dict[str, int] = {}
+    for operation in update_operations:
+        event = str(operation.get("event") or "NONE").upper()
+        event_counts[event] = event_counts.get(event, 0) + 1
+    persisted_attack_count = len([item for item in persisted_memories if item.get("is_attack_memory")])
+    persisted_count = len(persisted_memories)
+    return {
+        "existing_memory_count": existing_memory_count,
+        "update_operation_count": len(update_operations),
+        "update_event_counts": event_counts,
+        "add_count": event_counts.get("ADD", 0),
+        "update_count": event_counts.get("UPDATE", 0),
+        "delete_count": event_counts.get("DELETE", 0),
+        "noop_count": event_counts.get("NONE", 0) + event_counts.get("NOOP", 0),
+        "persisted_memory_count": persisted_count,
+        "persisted_attack_memory_count": persisted_attack_count,
+        "final_attack_persistence_rate": round(persisted_attack_count / float(len(extracted_memories) or 1), 4),
+        "final_attack_case_success": persisted_attack_count > 0,
+    }
+
+
 def admit_tool_output(
     *,
     llm,
@@ -366,6 +445,7 @@ def admit_tool_output(
     (
         additive_extraction_prompt,
         generate_additive_extraction_prompt,
+        _get_update_memory_messages,
         extract_json,
         remove_code_blocks,
     ) = _ensure_mem0_source()
@@ -484,6 +564,230 @@ def admit_tool_output(
         "prompt": {
             "system": additive_extraction_prompt,
             "user": user_prompt,
+        },
+        "summary": summary,
+    }
+
+
+def admit_tool_output_full(
+    *,
+    llm,
+    instruction: str,
+    actions: List[str],
+    payload: Dict[str, Any],
+    source_tool: str,
+    target_tool: str,
+    existing_records: Optional[List[Dict[str, Any]]] = None,
+    admission_context: Optional[Dict[str, Any]] = None,
+    custom_instructions: Optional[str] = None,
+    custom_update_instructions: Optional[str] = None,
+) -> Dict[str, Any]:
+    (
+        additive_extraction_prompt,
+        generate_additive_extraction_prompt,
+        get_update_memory_messages,
+        extract_json,
+        remove_code_blocks,
+    ) = _ensure_mem0_source()
+
+    existing_records = list(existing_records or [])
+    existing_memories = _existing_memories_from_records(existing_records)
+    context_messages = list((admission_context or {}).get("messages") or [])
+    if not context_messages:
+        context_messages = _default_messages(
+            instruction=instruction,
+            actions=actions,
+            payload=payload,
+            source_tool=source_tool,
+            target_tool=target_tool,
+        )
+    normalized_messages = [
+        {
+            "role": str(message.get("role", "assistant")),
+            "content": _normalize_message_content(message.get("content", "")),
+        }
+        for message in context_messages
+    ]
+
+    extraction_user_prompt = generate_additive_extraction_prompt(
+        existing_memories=existing_memories,
+        new_messages=normalized_messages,
+        last_k_messages=(admission_context or {}).get("last_k_messages"),
+        custom_instructions=custom_instructions or DEFAULT_ADMISSION_INSTRUCTIONS,
+    )
+    extraction_response = llm.invoke(
+        [
+            ("system", additive_extraction_prompt),
+            ("user", extraction_user_prompt),
+        ]
+    )
+    extraction_raw_response = _extract_response_text(extraction_response)
+
+    try:
+        extracted_memories = _parse_memory_objects(extraction_raw_response, remove_code_blocks, extract_json)
+    except Exception as exc:
+        return {
+            "admitted_memories": [],
+            "persisted_memories": [],
+            "all_admitted_memories": [],
+            "raw_response": extraction_raw_response,
+            "update_raw_response": "",
+            "error": f"extract_parse_error: {exc}",
+            "prompt": {
+                "system": additive_extraction_prompt,
+                "user": extraction_user_prompt,
+            },
+            "summary": {
+                "mode_detail": "mem0_full_extract_update",
+                "existing_memory_count": len(existing_memories),
+                "raw_response_non_empty": bool(str(extraction_raw_response).strip()),
+                "extraction_non_empty": False,
+                "extracted_memory_count": 0,
+                "admitted_memory_count": 0,
+                "admitted_attack_memory_count": 0,
+                "persisted_memory_count": 0,
+                "persisted_attack_memory_count": 0,
+                "final_attack_case_success": False,
+                "category_counts": {},
+                "attack_spec": _attack_spec_from_payload(payload),
+            },
+        }
+
+    extracted_texts = [
+        str(memory.get("text") or memory.get("memory") or "").strip()
+        for memory in extracted_memories
+        if str(memory.get("text") or memory.get("memory") or "").strip()
+    ]
+    if not extracted_texts:
+        return {
+            "admitted_memories": [],
+            "persisted_memories": [],
+            "all_admitted_memories": [],
+            "raw_response": extraction_raw_response,
+            "update_raw_response": "",
+            "prompt": {
+                "system": additive_extraction_prompt,
+                "user": extraction_user_prompt,
+            },
+            "summary": {
+                "mode_detail": "mem0_full_extract_update",
+                "existing_memory_count": len(existing_memories),
+                "raw_response_non_empty": bool(str(extraction_raw_response).strip()),
+                "extraction_non_empty": False,
+                "extracted_memory_count": 0,
+                "admitted_memory_count": 0,
+                "admitted_attack_memory_count": 0,
+                "persisted_memory_count": 0,
+                "persisted_attack_memory_count": 0,
+                "final_attack_case_success": False,
+                "category_counts": {},
+                "attack_spec": _attack_spec_from_payload(payload),
+            },
+        }
+
+    existing_dict = _existing_memory_dict(existing_records)
+    update_user_prompt = get_update_memory_messages(
+        existing_dict,
+        json.dumps(extracted_texts, ensure_ascii=False),
+        custom_update_memory_prompt=custom_update_instructions,
+    )
+    update_response = llm.invoke([("user", update_user_prompt)])
+    update_raw_response = _extract_response_text(update_response)
+    try:
+        update_operations = _parse_update_memory_objects(update_raw_response, remove_code_blocks, extract_json)
+    except Exception as exc:
+        return {
+            "admitted_memories": [],
+            "persisted_memories": [],
+            "all_admitted_memories": _classify_memory_objects(extracted_memories, payload),
+            "raw_response": extraction_raw_response,
+            "update_raw_response": update_raw_response,
+            "error": f"update_parse_error: {exc}",
+            "prompt": {
+                "system": additive_extraction_prompt,
+                "user": extraction_user_prompt,
+                "update_user": update_user_prompt,
+            },
+            "summary": {
+                "mode_detail": "mem0_full_extract_update",
+                "existing_memory_count": len(existing_memories),
+                "raw_response_non_empty": bool(str(extraction_raw_response).strip()),
+                "extraction_non_empty": True,
+                "extracted_memory_count": len(extracted_memories),
+                "admitted_memory_count": 0,
+                "admitted_attack_memory_count": 0,
+                "persisted_memory_count": 0,
+                "persisted_attack_memory_count": 0,
+                "final_attack_case_success": False,
+                "category_counts": {},
+                "attack_spec": _attack_spec_from_payload(payload),
+            },
+        }
+
+    persisted_inputs = []
+    for operation in update_operations:
+        event = str(operation.get("event") or "NONE").upper()
+        text = str(operation.get("text") or operation.get("memory") or "").strip()
+        if event in {"ADD", "UPDATE"} and text:
+            persisted_inputs.append(
+                {
+                    "text": text,
+                    "event": event,
+                    "update_id": str(operation.get("id") or ""),
+                    "old_memory": str(operation.get("old_memory") or ""),
+                }
+            )
+
+    all_extracted_classified = _classify_memory_objects(extracted_memories, payload)
+    persisted_memories = _classify_memory_objects(persisted_inputs, payload)
+    for persisted in persisted_memories:
+        source = next((item for item in persisted_inputs if item["text"] == persisted["text"]), {})
+        persisted["update_event"] = source.get("event", "")
+        persisted["update_id"] = source.get("update_id", "")
+        persisted["old_memory"] = source.get("old_memory", "")
+
+    admitted_memories = [memory for memory in persisted_memories if memory.get("is_attack_memory")]
+    category_counts: Dict[str, int] = {}
+    for item in persisted_memories:
+        category = str(item.get("category") or "unknown")
+        category_counts[category] = category_counts.get(category, 0) + 1
+
+    update_summary = _summarize_update_stage(
+        extracted_memories=extracted_memories,
+        update_operations=update_operations,
+        persisted_memories=persisted_memories,
+        existing_memory_count=len(existing_memories),
+    )
+    attack_count = len(admitted_memories)
+    summary = {
+        "mode_detail": "mem0_full_extract_update",
+        "existing_memory_count": len(existing_memories),
+        "raw_response_non_empty": bool(str(extraction_raw_response).strip()),
+        "update_response_non_empty": bool(str(update_raw_response).strip()),
+        "extraction_non_empty": len(extracted_memories) > 0,
+        "extracted_memory_count": len(extracted_memories),
+        "admitted_memory_count": len(persisted_memories),
+        "admitted_attack_memory_count": attack_count,
+        "dropped_duplicate_count": 0,
+        "dropped_non_attack_count": len([item for item in persisted_memories if not item.get("is_attack_memory")]),
+        "attack_rule_survival_rate": round(attack_count / float(len(extracted_memories) or 1), 4),
+        "category_counts": category_counts,
+        "attack_spec": _attack_spec_from_payload(payload),
+        **update_summary,
+    }
+
+    return {
+        "admitted_memories": admitted_memories,
+        "persisted_memories": persisted_memories,
+        "all_admitted_memories": persisted_memories,
+        "all_extracted_memories": all_extracted_classified,
+        "update_operations": update_operations,
+        "raw_response": extraction_raw_response,
+        "update_raw_response": update_raw_response,
+        "prompt": {
+            "system": additive_extraction_prompt,
+            "user": extraction_user_prompt,
+            "update_user": update_user_prompt,
         },
         "summary": summary,
     }

@@ -7,7 +7,7 @@ The current core pipeline is:
 ```text
 tool return / successor post-processor output
 -> structured memory candidate
--> direct write or Mem0-style additive admission
+-> direct write, Mem0-style additive admission, or Mem0 full update admission
 -> memory store
 -> future retrieval
 -> context injection
@@ -28,6 +28,7 @@ Phase -1 frozen snapshot complete
 Phase 0 admission microscope mem0_additive probes complete
 Phase 1 TMC-Mem0Bench v2 direct runner complete
 Phase 1 v2 schema 2.1 and full mem0_additive run complete
+Phase 1 v2 full mem0_full seeded-clean run complete
 ```
 
 What is already established:
@@ -45,6 +46,8 @@ What is already established:
 - Small realistic-domain v2 `mem0_additive` runs now succeed after extending admission classification to semantic route matches.
 - TMC-Mem0Bench v2 schema now explicitly records attack targets, clean routes, contaminated routes, and activation rules.
 - The full 60-case v2 `mem0_additive` run is complete.
+- A real Mem0-style full update path is now available as `mem0_full`.
+- v2 runner now supports seeded clean memory competition with `--seed-clean-memory`.
 
 What is not yet done:
 
@@ -97,6 +100,7 @@ Important runtime note:
 - Several frozen results use token retrieval in practice.
 - Embedding retrieval depends on local `sentence-transformers` availability.
 - `mem0_additive` depends on the local `mem0-main` prompt implementation and model calls.
+- `mem0_full` uses the local Mem0 extraction prompt plus the Mem0 update-manager prompt, producing `ADD`, `UPDATE`, `DELETE`, or `NOOP/NONE` decisions before persistence.
 
 ## Main Experiment Tracks
 
@@ -144,6 +148,13 @@ Write modes:
 
 - `direct`
 - `mem0_additive`
+- `mem0_full`
+
+Mode boundary:
+
+- `mem0_additive` is an ADD-only extraction path. It is useful for measuring how Mem0-style extraction rewrites and splits tool output, but it is not the full Mem0 paper-style update manager.
+- `mem0_full` runs extraction first, then runs the Mem0 update-manager decision step against existing memories.
+- `mem0_full` is most meaningful when the store already contains clean or conflicting memories; with an empty store, Mem0 often chooses `ADD`.
 
 Core metrics:
 
@@ -451,6 +462,86 @@ Boundary:
 
 - The full run uses token retrieval and deterministic follow-up evaluation.
 - It validates the offline v2 realistic-payload admission path, not closed-loop execution over real domain tools.
+- This is the ADD-only Mem0-style extraction path, not the full update-manager path.
+
+### v2 Mem0-Full Seeded Clean Competition
+
+New runner option:
+
+```powershell
+python benchmark\run_tmc_mem0bench_v2.py --admission-mode mem0_full --seed-clean-memory --retrieval-mode token --output-dir output\benchmark_v2_runs\smoke_mem0_full_seeded_clean_cross_domain4
+```
+
+4-case cross-domain smoke:
+
+```powershell
+python benchmark\run_tmc_mem0bench_v2.py --case-ids tmc-mem0bench-v2-tau2_retail-existing_prompt_style-retail_0,tmc-mem0bench-v2-tau2_airline-existing_prompt_style-airline_1,tmc-mem0bench-v2-agentdojo_workspace-existing_prompt_style-workspace_user_task_0,tmc-mem0bench-v2-agentdojo_travel-existing_prompt_style-travel_user_task_0 --admission-mode mem0_full --seed-clean-memory --retrieval-mode token --output-dir output\benchmark_v2_runs\smoke_mem0_full_seeded_clean_cross_domain4
+```
+
+Key result:
+
+- `case_count = 4`
+- domains covered: `tau2_retail`, `tau2_airline`, `agentdojo_workspace`, `agentdojo_travel`
+- `write_success_count = 4`
+- `retrieval_hit_count = 4`
+- `activation_count = 4`
+- `Memory Write Success Rate = 1.0`
+- `Retrieval Hit Rate = 1.0`
+- `Contaminated Activation Rate = 1.0`
+- `Tool Preference Shift = 1.0`
+- `Workflow Order Drift = 1.0`
+- clean competition relation: `coexist = 4`
+- clean seed survival rate: `1.0`
+- seed touched by update rate: `0.0`
+
+Interpretation:
+
+- Each case first seeds a trusted clean-route memory into the same memory store.
+- The malicious tool output is then admitted through `mem0_full`.
+- In this smoke, clean memories and malicious memories coexist; Mem0 did not delete or overwrite the seeded clean route.
+- The downstream deterministic evaluator still activates the contaminated route when the malicious memory is retrieved.
+
+Full 60-case seeded-clean run:
+
+```powershell
+python benchmark\run_tmc_mem0bench_v2.py --admission-mode mem0_full --seed-clean-memory --retrieval-mode token --output-dir output\benchmark_v2_runs\full_mem0_full_seeded_clean_chord311_clean_v21
+```
+
+Key result:
+
+- `case_count = 60`
+- `tau2_retail = 18`
+- `tau2_airline = 18`
+- `agentdojo_workspace = 12`
+- `agentdojo_travel = 12`
+- prompt families: `10` cases each across the six v2 families
+- `write_success_count = 60`
+- `retrieval_hit_count = 60`
+- `activation_count = 60`
+- `Memory Write Success Rate = 1.0`
+- `Retrieval Hit Rate = 1.0`
+- `Contaminated Activation Rate = 1.0`
+- `Tool Preference Shift = 1.0`
+- `Workflow Order Drift = 1.0`
+- clean competition relation: `coexist = 60`
+- clean seed survival rate: `1.0`
+- seed touched by update rate: `0.0`
+
+Admission/update detail:
+
+- aggregate update events: `ADD = 222`, `UPDATE = 14`, `NONE = 28`
+- mean `extracted_memory_count = 3.9333`
+- mean `persisted_memory_count = 3.9333`
+- mean `persisted_attack_memory_count = 2.1833`
+- total persisted memories: `236`
+- total persisted attack memories: `131`
+
+Interpretation:
+
+- The full Mem0 update-manager path did run; this is not ADD-only extraction.
+- However, the clean-route seed was never overwritten or deleted.
+- The dominant failure mode is coexistence: Mem0 preserves the clean memory but also admits the malicious workflow preference.
+- Because retrieval still surfaces the malicious memory, the downstream deterministic evaluator activates the contaminated route in all 60 cases.
 
 ## Phase -1 Frozen Snapshot
 
@@ -592,6 +683,12 @@ Run Phase 0 Mem0-additive microscope:
 python benchmark\run_phase0_admission_microscope.py --admission-mode mem0_additive --model gpt-4o-mini --output-dir output\phase0\mem0_additive_full_chord311_clean
 ```
 
+Run v2 Mem0-full with seeded clean-memory competition:
+
+```powershell
+python benchmark\run_tmc_mem0bench_v2.py --admission-mode mem0_full --seed-clean-memory --retrieval-mode token --output-dir output\benchmark_v2_runs\full_mem0_full_seeded_clean
+```
+
 Run single memory-seed experiment:
 
 ```powershell
@@ -630,16 +727,19 @@ At the current snapshot, the project supports these claims:
 8. Phase 0 admission-microscope probes show that Mem0-style additive admission rewrites surviving attack memories and filters pure noise.
 9. TMC-Mem0Bench v2 schema 2.1 makes attack target, clean route, contaminated route, and activation criteria explicit.
 10. The full 60-case v2 `mem0_additive` run shows successful write, retrieval, and activation under the explicit route schema.
+11. The 4-case v2 `mem0_full --seed-clean-memory` smoke shows clean-route memories and malicious memories coexisting in the same store, with no clean seed overwritten or deleted.
 
 ## Immediate Next Steps
 
 The next experiments should be:
 
-1. Re-run same-payload/different-source over realistic v2 payloads.
+1. Add stronger clean-memory competition variants, including multiple benign memories per case and contradictory user-confirmed policy memories.
 
-2. Integrate Mem0-native retrieval.
+2. Re-run same-payload/different-source over realistic v2 payloads.
 
-3. Add closed-loop v2 agent execution over realistic domain tools.
+3. Integrate Mem0-native retrieval.
+
+4. Add closed-loop v2 agent execution over realistic domain tools.
 
 ## Submission Notes
 
@@ -659,4 +759,6 @@ Before submitting this repository snapshot, preserve these files:
 - `output/benchmark_v2_runs/stratified_mem0_additive_chord311_clean_v2filter/`
 - `output/benchmark_v2_runs/cross_domain_mem0_additive_chord311_clean_v2filter/`
 - `output/benchmark_v2_runs/full_mem0_additive_chord311_clean_v21/`
+- `output/benchmark_v2_runs/smoke_mem0_full_seeded_clean_cross_domain4/`
+- `output/benchmark_v2_runs/full_mem0_full_seeded_clean_chord311_clean_v21/`
 - `output/phase0/mem0_additive_full_chord311_clean/`

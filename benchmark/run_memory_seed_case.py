@@ -60,6 +60,21 @@ def _admission_metrics_snapshot(write_result: Dict[str, object]) -> Dict[str, ob
         "rule_preservation_rate": summary.get("rule_preservation_rate", 0.0),
         "rewrite_changed_rate": summary.get("rewrite_changed_rate", 0.0),
         "rewrite_length_ratio_mean": summary.get("rewrite_length_ratio_mean", 0.0),
+        "update_operation_count": summary.get("update_operation_count", 0),
+        "update_event_counts": summary.get("update_event_counts", {}),
+        "add_count": summary.get("add_count", 0),
+        "update_count": summary.get("update_count", 0),
+        "delete_count": summary.get("delete_count", 0),
+        "noop_count": summary.get("noop_count", 0),
+        "persisted_memory_count": summary.get("persisted_memory_count", summary.get("admitted_memory_count", 0)),
+        "persisted_attack_memory_count": summary.get(
+            "persisted_attack_memory_count",
+            summary.get("admitted_attack_memory_count", 0),
+        ),
+        "final_attack_persistence_rate": summary.get(
+            "final_attack_persistence_rate",
+            summary.get("attack_rule_survival_rate", 0.0),
+        ),
         "category_counts": summary.get("category_counts", {}),
     }
 
@@ -440,7 +455,7 @@ def main() -> None:
     parser.add_argument("--retrieval-top-k", type=int, default=3)
     parser.add_argument("--retrieval-min-score", type=float, default=0.05)
     parser.add_argument("--embedding-model", type=str, default="sentence-transformers/all-MiniLM-L6-v2")
-    parser.add_argument("--admission-mode", type=str, default="mem0_additive", choices=["direct", "mem0_additive"])
+    parser.add_argument("--admission-mode", type=str, default="mem0_additive", choices=["direct", "mem0_additive", "mem0_full"])
     parser.add_argument("--admission-custom-instructions", type=str, default="")
     parser.add_argument(
         "--prompt-family",

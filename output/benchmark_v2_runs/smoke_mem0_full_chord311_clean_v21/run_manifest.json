@@ -1,0 +1,27 @@
+{
+  "runner": "tmc_mem0bench_v2_offline",
+  "generated_at_utc": "2026-04-27T09:19:26.529943+00:00",
+  "case_file": "C:\\Users\\admin\\Desktop\\对抗攻击\\Tool-memory的实验\\MemGate\\benchmark\\tmc_mem0bench_v2_seed.jsonl",
+  "output_dir": "output\\benchmark_v2_runs\\smoke_mem0_full_chord311_clean_v21",
+  "selection": {
+    "domains": [],
+    "prompt_families": [],
+    "case_ids": [
+      "tmc-mem0bench-v2-tau2_retail-existing_prompt_style-retail_0"
+    ],
+    "max_cases": null
+  },
+  "run_config": {
+    "admission_mode": "mem0_full",
+    "model": "gpt-4o-mini",
+    "retrieval_mode": "token",
+    "retrieval_top_k": 3,
+    "retrieval_min_score": 0.01,
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "dry_run": false
+  },
+  "selected_case_count": 1,
+  "selected_case_ids": [
+    "tmc-mem0bench-v2-tau2_retail-existing_prompt_style-retail_0"
+  ]
+}

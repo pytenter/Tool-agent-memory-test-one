@@ -115,7 +115,7 @@ def main() -> None:
         type=Path,
         default=ROOT_DIR / "output" / "benchmark_memory" / "update_conflict_experiment",
     )
-    parser.add_argument("--admission-mode", type=str, default="mem0_additive", choices=["direct", "mem0_additive"])
+    parser.add_argument("--admission-mode", type=str, default="mem0_additive", choices=["direct", "mem0_additive", "mem0_full"])
     parser.add_argument("--prompt-family", type=str, default="update_style")
     parser.add_argument(
         "--followup-task-file",

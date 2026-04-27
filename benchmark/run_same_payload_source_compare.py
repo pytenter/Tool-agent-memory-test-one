@@ -254,7 +254,7 @@ def main() -> None:
         default=ROOT_DIR / "output" / "benchmark_memory" / "same_payload_source_compare",
     )
     parser.add_argument("--prompt-family", type=str, default="preference_style")
-    parser.add_argument("--admission-mode", type=str, default="mem0_additive", choices=["direct", "mem0_additive"])
+    parser.add_argument("--admission-mode", type=str, default="mem0_additive", choices=["direct", "mem0_additive", "mem0_full"])
     parser.add_argument("--retrieval-mode", type=str, default="embedding", choices=["embedding", "semantic", "auto", "token"])
     parser.add_argument("--retrieval-top-k", type=int, default=3)
     parser.add_argument("--retrieval-min-score", type=float, default=0.05)
