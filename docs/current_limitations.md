@@ -1,6 +1,6 @@
 # Current Limitations
 
-Generated at UTC: `2026-04-27T06:42:33.195722+00:00`
+Generated at UTC: `2026-04-27T07:25:57.780670+00:00`
 
 ## Retrieval
 
@@ -17,6 +17,7 @@ Generated at UTC: `2026-04-27T06:42:33.195722+00:00`
 ## Evaluation
 
 - The current v2 direct run uses a deterministic local follow-up evaluator.
+- The current v2 Mem0-additive frozen runs are small smoke/expansion runs, not yet a full 60-case result.
 - Closed-loop agent execution over real domain tools is not yet part of the v2 frozen result.
 - Some v2 clean-vs-preferred route comparisons are inferred from payload text until the schema exposes explicit route fields.
 

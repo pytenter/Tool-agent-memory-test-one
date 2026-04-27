@@ -56,6 +56,30 @@ FROZEN_ARTIFACTS = [
         "retrieval_mode": "token",
         "admission_mode": "direct",
     },
+    {
+        "artifact_id": "tmc_mem0bench_v2_mem0_additive_retail12",
+        "phase": "phase1_v2_mem0_additive_retail_expansion",
+        "path": "output/benchmark_v2_runs/stratified_mem0_additive_chord311_clean_v2filter/summary.json",
+        "description": "12-case v2 Mem0-additive retail expansion across prompt families.",
+        "retrieval_mode": "token",
+        "admission_mode": "mem0_additive",
+    },
+    {
+        "artifact_id": "tmc_mem0bench_v2_mem0_additive_cross_domain4",
+        "phase": "phase1_v2_mem0_additive_cross_domain_smoke",
+        "path": "output/benchmark_v2_runs/cross_domain_mem0_additive_chord311_clean_v2filter/summary.json",
+        "description": "4-case v2 Mem0-additive smoke with one existing_prompt_style case from each realistic domain.",
+        "retrieval_mode": "token",
+        "admission_mode": "mem0_additive",
+    },
+    {
+        "artifact_id": "phase0_mem0_additive_microscope",
+        "phase": "phase0_admission_microscope",
+        "path": "output/phase0/mem0_additive_full_chord311_clean/admission_microscope_summary.json",
+        "description": "Phase 0 memory-form microscope using Mem0-style additive admission.",
+        "retrieval_mode": "none",
+        "admission_mode": "mem0_additive",
+    },
 ]
 
 
@@ -160,6 +184,27 @@ def _summarize_v2_runner(payload: object) -> Dict[str, object]:
     return summary
 
 
+def _summarize_phase0(payload: object) -> Dict[str, object]:
+    if not isinstance(payload, dict):
+        return {}
+    by_form = payload.get("by_memory_form") or {}
+    summary = {
+        "case_count": payload.get("case_count", 0),
+        "written_count": payload.get("written_count", 0),
+        "failure_count": payload.get("failure_count", 0),
+        "extraction_non_empty_count": payload.get("extraction_non_empty_count", 0),
+        "admitted_attack_memory_count": payload.get("admitted_attack_memory_count", 0),
+    }
+    if isinstance(by_form, dict):
+        noise = by_form.get("noise_like") or {}
+        preference = by_form.get("preference_like") or {}
+        summary["noise_like.write_success_rate"] = noise.get("write_success_rate", "")
+        summary["preference_like.attack_rule_survival_rate_mean"] = preference.get(
+            "attack_rule_survival_rate_mean", ""
+        )
+    return summary
+
+
 def _extract_key_metrics(artifact_id: str, payload: object) -> Dict[str, object]:
     if artifact_id.startswith("attack_core"):
         return _summarize_attack_core(payload)
@@ -169,8 +214,10 @@ def _extract_key_metrics(artifact_id: str, payload: object) -> Dict[str, object]
         return _summarize_update_conflict(payload)
     if artifact_id == "same_payload_source_compare":
         return _summarize_source_compare(payload)
-    if artifact_id == "tmc_mem0bench_v2_full_direct":
+    if artifact_id.startswith("tmc_mem0bench_v2_"):
         return _summarize_v2_runner(payload)
+    if artifact_id == "phase0_mem0_additive_microscope":
+        return _summarize_phase0(payload)
     return {}
 
 
@@ -246,11 +293,12 @@ def _write_report(summary: Dict[str, object], rows: List[Dict[str, object]]) -> 
             "- Direct memory write remains the clean upper bound for memory contamination.",
             "- Existing Mem0-style admission results show rewrite/preservation behavior rather than a pure block decision.",
             "- The v2 runner now has a full 60-case direct-write offline smoke result.",
+            "- Small v2 Mem0-additive runs now show write, retrieval, and activation over realistic-domain payloads.",
             "",
             "## Boundary",
             "",
             "- The v2 direct result uses deterministic follow-up evaluation and token retrieval.",
-            "- Full `mem0_additive` v2 runs and Mem0-native retrieval are not frozen yet.",
+            "- Full 60-case `mem0_additive` v2 and Mem0-native retrieval are not frozen yet.",
             "- Source-aware trust/admission scoring is not implemented in the frozen snapshot.",
         ]
     )
@@ -278,6 +326,7 @@ Generated at UTC: `{summary['generated_at_utc']}`
 ## Evaluation
 
 - The current v2 direct run uses a deterministic local follow-up evaluator.
+- The current v2 Mem0-additive frozen runs are small smoke/expansion runs, not yet a full 60-case result.
 - Closed-loop agent execution over real domain tools is not yet part of the v2 frozen result.
 - Some v2 clean-vs-preferred route comparisons are inferred from payload text until the schema exposes explicit route fields.
 

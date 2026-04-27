@@ -122,6 +122,35 @@ def _run_probe(
     return row
 
 
+def _failure_row(case: Dict[str, object], admission_mode: str, exc: Exception) -> Dict[str, object]:
+    return {
+        "case_id": case["case_id"],
+        "test_type": case["test_type"],
+        "memory_form": case["memory_form"],
+        "expected_behavior": case["expected_behavior"],
+        "admission_mode": admission_mode,
+        "written": False,
+        "write_reason": "runner_exception",
+        "record_count": 0,
+        "extraction_non_empty": False,
+        "extracted_memory_count": 0,
+        "admitted_memory_count": 0,
+        "admitted_attack_memory_count": 0,
+        "dropped_duplicate_count": 0,
+        "dropped_non_attack_count": 0,
+        "attack_rule_survival_rate": 0.0,
+        "task_type_preservation_rate": 0.0,
+        "tool_preference_preservation_rate": 0.0,
+        "marker_preservation_rate": 0.0,
+        "rule_preservation_rate": 0.0,
+        "rewrite_changed_rate": 0.0,
+        "rewrite_length_ratio_mean": 0.0,
+        "category_counts": {},
+        "error_type": type(exc).__name__,
+        "error": str(exc),
+    }
+
+
 def _write_csv(path: Path, rows: List[Dict[str, object]]) -> None:
     if not rows:
         return
@@ -163,6 +192,7 @@ def _build_summary(rows: List[Dict[str, object]], admission_mode: str) -> Dict[s
         "case_count": len(rows),
         "test_type_counts": dict(Counter(row["test_type"] for row in rows)),
         "written_count": sum(1 for row in rows if row["written"]),
+        "failure_count": sum(1 for row in rows if row.get("write_reason") == "runner_exception"),
         "extraction_non_empty_count": sum(1 for row in rows if row["extraction_non_empty"]),
         "admitted_attack_memory_count": sum(int(row["admitted_attack_memory_count"]) for row in rows),
         "by_memory_form": by_form,
@@ -198,14 +228,24 @@ def _write_doc(output_dir: Path, summary: Dict[str, object]) -> None:
             f"{form_summary['rewrite_changed_rate_mean']} |"
         )
     lines.extend(
-        [
-            "",
-            "## Boundary",
-            "",
-            "- `direct` mode is an upper-bound sanity pass for probe construction.",
-            "- `mem0_additive` mode should be run next to observe extraction, rewrite, duplicate, and conflict behavior.",
-        ]
+        ["", "## Boundary", ""]
     )
+    if summary["admission_mode"] == "direct":
+        lines.extend(
+            [
+                "- `direct` mode is an upper-bound sanity pass for probe construction.",
+                "- `mem0_additive` mode should be run next to observe extraction, rewrite, duplicate, and conflict behavior.",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "- This run uses Mem0-style additive admission through the local `mem0-main` prompt path.",
+                "- The current result shows admission rewrite behavior for every written attack memory.",
+                "- `noise_like` was extracted as auxiliary content but did not pass the attack-memory filter.",
+                "- This remains a probe-level admission microscope, not a downstream drift benchmark.",
+            ]
+        )
     (docs_dir / "phase0_mem0_admission_microscope.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -214,6 +254,10 @@ def main() -> None:
     parser.add_argument("--admission-mode", choices=["direct", "mem0_additive"], default="direct")
     parser.add_argument("--model", type=str, default="gpt-4o-mini")
     parser.add_argument("--admission-custom-instructions", type=str, default="")
+    parser.add_argument("--memory-forms", type=str, default="", help="Comma-separated memory forms to run.")
+    parser.add_argument("--case-ids", type=str, default="", help="Comma-separated case ids to run.")
+    parser.add_argument("--max-cases", type=int, default=None)
+    parser.add_argument("--fail-fast", action="store_true")
     parser.add_argument(
         "--output-dir",
         type=Path,
@@ -228,16 +272,29 @@ def main() -> None:
         admission_llm = create_chat_openai(model=args.model, temperature=0)
 
     cases = build_phase0_probe_cases()
+    if args.memory_forms:
+        allowed_forms = {item.strip() for item in args.memory_forms.split(",") if item.strip()}
+        cases = [case for case in cases if case["memory_form"] in allowed_forms]
+    if args.case_ids:
+        allowed_case_ids = {item.strip() for item in args.case_ids.split(",") if item.strip()}
+        cases = [case for case in cases if case["case_id"] in allowed_case_ids]
+    if args.max_cases is not None:
+        cases = cases[: args.max_cases]
     rows: List[Dict[str, object]] = []
     results_path = args.output_dir / "admission_microscope_results.jsonl"
     for case in cases:
-        row = _run_probe(
-            case=case,
-            output_dir=args.output_dir,
-            admission_mode=args.admission_mode,
-            admission_llm=admission_llm,
-            admission_custom_instructions=args.admission_custom_instructions,
-        )
+        try:
+            row = _run_probe(
+                case=case,
+                output_dir=args.output_dir,
+                admission_mode=args.admission_mode,
+                admission_llm=admission_llm,
+                admission_custom_instructions=args.admission_custom_instructions,
+            )
+        except Exception as exc:
+            if args.fail_fast:
+                raise
+            row = _failure_row(case, args.admission_mode, exc)
         rows.append(row)
         _append_jsonl(results_path, row)
 

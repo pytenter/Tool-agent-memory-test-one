@@ -1,18 +1,26 @@
 {
-  "generated_at_utc": "2026-04-27T06:42:33.195722+00:00",
-  "git_commit": "e65975db4ab65a8cf5a0aade490db2c7d5fb4ca9",
+  "generated_at_utc": "2026-04-27T07:25:57.780670+00:00",
+  "git_commit": "d7854e44813ebc680d1c915b79f99461dddafe04",
   "git_status_short": [
-    "?? benchmark/freeze_current_results.py",
-    "?? benchmark/run_tmc_mem0bench_v2.py",
-    "?? benchmark/v2_followup_evaluator.py",
-    "?? docs/current_limitations.md",
-    "?? docs/frozen_snapshot_report.md",
-    "?? output/benchmark_v2_runs/",
-    "?? output/frozen_result_index.csv",
-    "?? output/frozen_result_summary.json"
+    "M README.md",
+    " M benchmark/freeze_current_results.py",
+    " M benchmark/run_phase0_admission_microscope.py",
+    " M bridge/mem0_admission_adapter.py",
+    " M docs/current_limitations.md",
+    " M docs/frozen_snapshot_report.md",
+    " M docs/phase0_mem0_admission_microscope.md",
+    " M output/frozen_result_index.csv",
+    " M output/frozen_result_summary.json",
+    "?? output/benchmark_v2_runs/cross_domain_mem0_additive_chord311_clean_v2filter/",
+    "?? output/benchmark_v2_runs/smoke_mem0_additive_chord311_clean/",
+    "?? output/benchmark_v2_runs/smoke_mem0_additive_chord311_clean_v2filter/",
+    "?? output/benchmark_v2_runs/stratified_mem0_additive_chord311_clean_v2filter/",
+    "?? output/phase0/mem0_additive_full_chord311_clean/",
+    "?? output/phase0/mem0_additive_smoke/",
+    "?? output/phase0/mem0_additive_smoke_chord311_clean/"
   ],
-  "artifact_count": 5,
-  "existing_artifact_count": 5,
+  "artifact_count": 8,
+  "existing_artifact_count": 8,
   "artifacts": [
     {
       "artifact_id": "attack_core_stability_20260425_105821",
@@ -113,6 +121,70 @@
         "Contaminated Activation Rate": 1.0,
         "Tool Preference Shift": 0.8,
         "Workflow Order Drift": 0.8
+      }
+    },
+    {
+      "artifact_id": "tmc_mem0bench_v2_mem0_additive_retail12",
+      "phase": "phase1_v2_mem0_additive_retail_expansion",
+      "path": "output/benchmark_v2_runs/stratified_mem0_additive_chord311_clean_v2filter/summary.json",
+      "description": "12-case v2 Mem0-additive retail expansion across prompt families.",
+      "retrieval_mode": "token",
+      "admission_mode": "mem0_additive",
+      "exists": true,
+      "size_bytes": 3792,
+      "last_write_time_utc": "2026-04-27T07:21:19.369069+00:00",
+      "key_metrics": {
+        "case_count": 12,
+        "write_success_count": 12,
+        "retrieval_hit_count": 12,
+        "activation_count": 12,
+        "Memory Write Success Rate": 1.0,
+        "Retrieval Hit Rate": 1.0,
+        "Contaminated Activation Rate": 1.0,
+        "Tool Preference Shift": 0.3333,
+        "Workflow Order Drift": 0.3333
+      }
+    },
+    {
+      "artifact_id": "tmc_mem0bench_v2_mem0_additive_cross_domain4",
+      "phase": "phase1_v2_mem0_additive_cross_domain_smoke",
+      "path": "output/benchmark_v2_runs/cross_domain_mem0_additive_chord311_clean_v2filter/summary.json",
+      "description": "4-case v2 Mem0-additive smoke with one existing_prompt_style case from each realistic domain.",
+      "retrieval_mode": "token",
+      "admission_mode": "mem0_additive",
+      "exists": true,
+      "size_bytes": 3215,
+      "last_write_time_utc": "2026-04-27T07:23:42.920415+00:00",
+      "key_metrics": {
+        "case_count": 4,
+        "write_success_count": 4,
+        "retrieval_hit_count": 4,
+        "activation_count": 4,
+        "Memory Write Success Rate": 1.0,
+        "Retrieval Hit Rate": 1.0,
+        "Contaminated Activation Rate": 1.0,
+        "Tool Preference Shift": 1.0,
+        "Workflow Order Drift": 1.0
+      }
+    },
+    {
+      "artifact_id": "phase0_mem0_additive_microscope",
+      "phase": "phase0_admission_microscope",
+      "path": "output/phase0/mem0_additive_full_chord311_clean/admission_microscope_summary.json",
+      "description": "Phase 0 memory-form microscope using Mem0-style additive admission.",
+      "retrieval_mode": "none",
+      "admission_mode": "mem0_additive",
+      "exists": true,
+      "size_bytes": 2565,
+      "last_write_time_utc": "2026-04-27T07:06:08.621540+00:00",
+      "key_metrics": {
+        "case_count": 14,
+        "written_count": 13,
+        "failure_count": 0,
+        "extraction_non_empty_count": 14,
+        "admitted_attack_memory_count": 17,
+        "noise_like.write_success_rate": 0.0,
+        "preference_like.attack_rule_survival_rate_mean": 1.0
       }
     }
   ]

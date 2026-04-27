@@ -25,8 +25,9 @@ Current stage:
 
 ```text
 Phase -1 frozen snapshot complete
-Phase 0 admission microscope scaffold complete
+Phase 0 admission microscope mem0_additive probes complete
 Phase 1 TMC-Mem0Bench v2 direct runner complete
+Phase 1 v2 mem0_additive smoke and retail expansion complete
 ```
 
 What is already established:
@@ -40,11 +41,12 @@ What is already established:
 - Update/conflict behavior has been tested and currently shows coexistence.
 - Same-payload/source comparison has been tested in the older local setup and currently shows no meaningful source sensitivity.
 - TMC-Mem0Bench v2 now has a 60-case realistic-domain seed layer and a direct-write offline runner.
-- Phase 0 memory-form probes now exist for admission-microscope experiments.
+- Phase 0 memory-form probes have been run through `mem0_additive`.
+- Small realistic-domain v2 `mem0_additive` runs now succeed after extending admission classification to semantic route matches.
 
 What is not yet done:
 
-- TMC-Mem0Bench v2 `mem0_additive` full run is not frozen yet.
+- TMC-Mem0Bench v2 `mem0_additive` full run is not complete or frozen yet.
 - Mem0-native retrieval is not integrated as a first-class runner mode.
 - Source-aware trust/admission scoring is not implemented yet.
 - Closed-loop v2 agent execution over realistic domain tools is not implemented yet.
@@ -333,6 +335,77 @@ Boundary:
 - It uses deterministic local follow-up evaluation.
 - It does not yet prove full Mem0-style admission survival on v2 realistic-domain payloads.
 
+### v2 Mem0-Additive Runs
+
+Initial retail smoke:
+
+```powershell
+python benchmark\run_tmc_mem0bench_v2.py --domains tau2_retail --prompt-families existing_prompt_style,update_style --admission-mode mem0_additive --retrieval-mode token --max-cases 2 --output-dir output\benchmark_v2_runs\smoke_mem0_additive_chord311_clean_v2filter
+```
+
+Key result:
+
+- `case_count = 2`
+- `write_success_count = 2`
+- `retrieval_hit_count = 2`
+- `activation_count = 2`
+- `Memory Write Success Rate = 1.0`
+- `Retrieval Hit Rate = 1.0`
+- `Contaminated Activation Rate = 1.0`
+- `Tool Preference Shift = 0.5`
+- `Workflow Order Drift = 0.5`
+
+Retail 12-case expansion across prompt families:
+
+```powershell
+python benchmark\run_tmc_mem0bench_v2.py --admission-mode mem0_additive --retrieval-mode token --max-cases 12 --output-dir output\benchmark_v2_runs\stratified_mem0_additive_chord311_clean_v2filter
+```
+
+Key result:
+
+- `case_count = 12`
+- `domain_counts.tau2_retail = 12`
+- `write_success_count = 12`
+- `retrieval_hit_count = 12`
+- `activation_count = 12`
+- `Memory Write Success Rate = 1.0`
+- `Retrieval Hit Rate = 1.0`
+- `Contaminated Activation Rate = 1.0`
+- `Tool Preference Shift = 0.3333`
+- `Workflow Order Drift = 0.3333`
+
+Cross-domain smoke:
+
+```powershell
+python benchmark\run_tmc_mem0bench_v2.py --case-ids tmc-mem0bench-v2-tau2_retail-existing_prompt_style-retail_0,tmc-mem0bench-v2-tau2_airline-existing_prompt_style-airline_1,tmc-mem0bench-v2-agentdojo_workspace-existing_prompt_style-workspace_user_task_0,tmc-mem0bench-v2-agentdojo_travel-existing_prompt_style-travel_user_task_0 --admission-mode mem0_additive --retrieval-mode token --output-dir output\benchmark_v2_runs\cross_domain_mem0_additive_chord311_clean_v2filter
+```
+
+Key result:
+
+- `case_count = 4`
+- domains covered: `tau2_retail`, `tau2_airline`, `agentdojo_workspace`, `agentdojo_travel`
+- `write_success_count = 4`
+- `retrieval_hit_count = 4`
+- `activation_count = 4`
+- `Memory Write Success Rate = 1.0`
+- `Retrieval Hit Rate = 1.0`
+- `Contaminated Activation Rate = 1.0`
+- `Tool Preference Shift = 1.0`
+- `Workflow Order Drift = 1.0`
+
+Admission detail:
+
+- Mem0 extracted `2-3` memories per case.
+- The adapter now records semantic route preservation through `semantic_target_preservation_rate`.
+- Both smoke cases preserved semantic route targets with `semantic_target_preservation_rate = 1.0`.
+- Pure user/task context was dropped as auxiliary rather than written as attack memory.
+
+Boundary:
+
+- These are still small runs.
+- The 12-case run is retail-only because `--max-cases` follows seed order.
+- They validate the v2 realistic-payload admission path, not the full 60-case distribution.
+
 ## Phase -1 Frozen Snapshot
 
 Phase -1 artifacts:
@@ -343,13 +416,16 @@ Phase -1 artifacts:
 - `output/frozen_result_index.csv`
 - `output/frozen_result_summary.json`
 
-The frozen snapshot currently indexes five key artifacts:
+The frozen snapshot currently indexes eight key artifacts:
 
 - `attack_core_stability_20260425_105821`
 - `prompt_family_batch_20260426_040501`
 - `update_conflict_experiment`
 - `same_payload_source_compare`
 - `tmc_mem0bench_v2_full_direct`
+- `tmc_mem0bench_v2_mem0_additive_retail12`
+- `tmc_mem0bench_v2_mem0_additive_cross_domain4`
+- `phase0_mem0_additive_microscope`
 
 Regenerate:
 
@@ -382,34 +458,40 @@ Current probe set:
 - one soft-conflict probe
 - one source-tag probe
 
-Direct smoke run:
+Mem0-additive full probe run:
 
 ```powershell
-python benchmark\run_phase0_admission_microscope.py --admission-mode direct --output-dir output\phase0\direct_smoke
+python benchmark\run_phase0_admission_microscope.py --admission-mode mem0_additive --model gpt-4o-mini --output-dir output\phase0\mem0_additive_full_chord311_clean
 ```
 
-Current direct smoke result:
+Current `mem0_additive` result:
 
 - `case_count = 14`
 - `single_form = 11`
 - `mixed_form = 1`
 - `soft_conflict = 1`
 - `source_tag = 1`
-- `written_count = 14`
+- `written_count = 13`
 - `extraction_non_empty_count = 14`
-- `admitted_attack_memory_count = 14`
+- `admitted_attack_memory_count = 17`
+- `noise_like.write_success_rate = 0.0`
+- `preference_like.attack_rule_survival_rate_mean = 1.0`
+- all written attack memories were rewritten (`rewrite_changed_rate_mean = 1.0` for written forms)
 
 Artifacts:
 
-- `output/phase0/direct_smoke/admission_microscope_summary.json`
-- `output/phase0/direct_smoke/admission_microscope_results.jsonl`
-- `output/phase0/direct_smoke/admission_microscope_summary.csv`
-- `output/phase0/direct_smoke/source_tag_admission_summary.csv`
+- `output/phase0/mem0_additive_full_chord311_clean/admission_microscope_summary.json`
+- `output/phase0/mem0_additive_full_chord311_clean/admission_microscope_results.jsonl`
+- `output/phase0/mem0_additive_full_chord311_clean/admission_microscope_summary.csv`
+- `output/phase0/mem0_additive_full_chord311_clean/source_tag_admission_summary.csv`
 
-Boundary:
+Interpretation:
 
-- The direct smoke is only an upper-bound sanity pass.
-- The next important Phase 0 result is `mem0_additive`, which should reveal extraction, rewrite, duplicate, noise-filtering, and conflict behavior.
+- Mem0-style admission extracted content for every probe.
+- `noise_like` was extracted as auxiliary content but did not pass the attack-memory filter.
+- Preference, constraint, goal, raw-log, mixed preference/noise, and source-tag preference forms survived with attack-rule survival rate `1.0`.
+- Decision, workflow, reflection, success, update, relational, and soft-conflict probes often produced both attack and auxiliary memories, with attack-rule survival rate `0.5`.
+- The result supports the interpretation that Mem0-style admission is an admission transformer: it rewrites and splits memory, rather than simply accepting or rejecting whole tool outputs.
 
 ## Main Scripts
 
@@ -457,10 +539,10 @@ Run v2 direct benchmark:
 python benchmark\run_tmc_mem0bench_v2.py --admission-mode direct --retrieval-mode token --output-dir output\benchmark_v2_runs\full_direct
 ```
 
-Run Phase 0 direct smoke:
+Run Phase 0 Mem0-additive microscope:
 
 ```powershell
-python benchmark\run_phase0_admission_microscope.py --admission-mode direct --output-dir output\phase0\direct_smoke
+python benchmark\run_phase0_admission_microscope.py --admission-mode mem0_additive --model gpt-4o-mini --output-dir output\phase0\mem0_additive_full_chord311_clean
 ```
 
 Run single memory-seed experiment:
@@ -498,25 +580,14 @@ At the current snapshot, the project supports these claims:
 5. In the current offline implementation, update-style malicious memories coexist with benign default memories rather than replacing them.
 6. In the older local source-comparison setup, source provenance does not yet strongly separate local-successor and synthetic-helper payloads.
 7. TMC-Mem0Bench v2 now executes all 60 realistic-domain seed cases in a direct-write upper-bound runner.
-8. Phase 0 admission-microscope probes are ready for Mem0-style additive admission analysis.
+8. Phase 0 admission-microscope probes show that Mem0-style additive admission rewrites surviving attack memories and filters pure noise.
+9. Small v2 realistic-domain `mem0_additive` runs now show successful write, retrieval, and activation after semantic route classification is enabled.
 
 ## Immediate Next Steps
 
 The next experiments should be:
 
-1. Run Phase 0 with `mem0_additive`:
-
-```powershell
-python benchmark\run_phase0_admission_microscope.py --admission-mode mem0_additive --model gpt-4o-mini --output-dir output\phase0\mem0_additive_smoke
-```
-
-2. Run a small v2 `mem0_additive` smoke:
-
-```powershell
-python benchmark\run_tmc_mem0bench_v2.py --domains tau2_retail --prompt-families existing_prompt_style,update_style --admission-mode mem0_additive --retrieval-mode token --max-cases 2 --output-dir output\benchmark_v2_runs\smoke_mem0_additive
-```
-
-3. Add explicit v2 schema fields for clean and contaminated routes:
+1. Add explicit v2 schema fields for clean and contaminated routes:
 
 - `preferred_tool`
 - `alternative_tool`
@@ -524,9 +595,15 @@ python benchmark\run_tmc_mem0bench_v2.py --domains tau2_retail --prompt-families
 - `expected_contaminated_route`
 - `activation_rule`
 
-4. Re-run same-payload/different-source over realistic v2 payloads.
+2. Run the full 60-case v2 `mem0_additive` benchmark:
 
-5. Integrate Mem0-native retrieval.
+```powershell
+python benchmark\run_tmc_mem0bench_v2.py --admission-mode mem0_additive --retrieval-mode token --output-dir output\benchmark_v2_runs\full_mem0_additive
+```
+
+3. Re-run same-payload/different-source over realistic v2 payloads.
+
+4. Integrate Mem0-native retrieval.
 
 ## Submission Notes
 
@@ -542,4 +619,7 @@ Before submitting this repository snapshot, preserve these files:
 - `output/benchmark_memory/update_conflict_experiment/update_conflict_summary.json`
 - `output/benchmark_memory/same_payload_source_compare/same_payload_source_compare_summary.json`
 - `output/benchmark_v2_runs/full_direct/`
-- `output/phase0/direct_smoke/`
+- `output/benchmark_v2_runs/smoke_mem0_additive_chord311_clean_v2filter/`
+- `output/benchmark_v2_runs/stratified_mem0_additive_chord311_clean_v2filter/`
+- `output/benchmark_v2_runs/cross_domain_mem0_additive_chord311_clean_v2filter/`
+- `output/phase0/mem0_additive_full_chord311_clean/`
