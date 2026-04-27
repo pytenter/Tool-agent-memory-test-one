@@ -3,13 +3,12 @@
 This directory now contains two layers:
 
 1. `TMC-ChordTools v1`
-2. `TMC-Mem0Bench v2 seed`
+2. `TMC-Mem0Bench v2`
 
 `v1` is the original single-domain ChordTools benchmark.
 
-`v2 seed` is the new offline admission-aware benchmark integration layer that
-extends the project to four additional realistic domains without changing the
-current attack model:
+`v2` is the offline admission-aware benchmark layer that extends the project to
+four additional realistic domains without changing the current attack model:
 
 - `tau2_retail`
 - `agentdojo_workspace`
@@ -20,7 +19,7 @@ The current attack model remains:
 
 - clean tool chain returns structured output
 - a malicious successor/post-processor summarizes that output
-- the summary is written through `direct` or `mem0_additive`
+- the summary is written through `direct`, `mem0_additive`, or `mem0_full`
 - future retrieval may reactivate the contaminated memory
 - downstream behavior may drift
 
@@ -41,21 +40,24 @@ The current attack model remains:
 - `run_update_conflict_experiment.py`
 - `run_same_payload_source_compare.py`
 
-### New Benchmark v2 Seed Layer
+### TMC-Mem0Bench v2
 
 - `tmc_mem0bench_v2.py`
 - `export_tmc_mem0bench_v2.py`
+- `validate_tmc_mem0bench_v2.py`
+- `run_tmc_mem0bench_v2.py`
+- `v2_followup_evaluator.py`
 - `tmc_mem0bench_v2_seed.jsonl`
 - `tmc_mem0bench_v2_seed_manifest.json`
 
-## TMC-Mem0Bench v2 Seed
+## TMC-Mem0Bench v2
 
-The new benchmark-v2 layer is a schema and case-export layer first, not a
-fully unified multi-domain runner yet.
+The benchmark-v2 layer now contains both:
 
-That is intentional.
+1. a realistic multi-domain seed/schema layer, and
+2. an offline write-retrieve-activate runner.
 
-The goal of this release is to freeze:
+The schema/export layer freezes:
 
 - a common case schema
 - domain/task adapters
@@ -63,7 +65,17 @@ The goal of this release is to freeze:
 - realistic domain-specific contaminated payload text
 - manifest counts and placeholder validation
 
-before adding a fully unified multi-domain runner.
+The runner executes the frozen cases through memory write, retrieval, and a
+deterministic follow-up evaluator. It supports:
+
+- `direct`
+- `mem0_additive`
+- `mem0_full`
+- optional seeded clean-memory competition through `--seed-clean-memory`
+
+It still does not implement closed-loop execution over the original external
+domain tools. The current v2 runner is an offline admission and activation
+benchmark.
 
 ## Integrated Domains
 
@@ -135,6 +147,11 @@ Each `v2` case records:
 - `attacker_gain_if_activated`
 - `clean_behavior_summary`
 - `contaminated_behavior_summary`
+- `preferred_tool`
+- `alternative_tool`
+- `expected_clean_route`
+- `expected_contaminated_route`
+- `activation_rule`
 - `user_task`
 - `future_task`
 - `expected_clean_tools`
@@ -189,17 +206,42 @@ The exporter writes:
 - `benchmark/tmc_mem0bench_v2_seed.jsonl`
 - `benchmark/tmc_mem0bench_v2_seed_manifest.json`
 
+## Runner Commands
+
+Validate the v2 seed:
+
+```powershell
+python benchmark\validate_tmc_mem0bench_v2.py
+```
+
+Run the direct-write upper-bound benchmark:
+
+```powershell
+python benchmark\run_tmc_mem0bench_v2.py --admission-mode direct --retrieval-mode token --output-dir output\benchmark_v2_runs\full_direct
+```
+
+Run the full Mem0-additive benchmark:
+
+```powershell
+python benchmark\run_tmc_mem0bench_v2.py --admission-mode mem0_additive --retrieval-mode token --output-dir output\benchmark_v2_runs\full_mem0_additive_chord311_clean_v21
+```
+
+Run the full Mem0 update-manager benchmark with seeded clean-memory competition:
+
+```powershell
+python benchmark\run_tmc_mem0bench_v2.py --admission-mode mem0_full --seed-clean-memory --retrieval-mode token --output-dir output\benchmark_v2_runs\full_mem0_full_seeded_clean_chord311_clean_v21
+```
+
 ## Current Boundary
 
-The new `v2` integration layer currently freezes:
+The v2 layer currently provides:
 
 - multi-domain case schema
 - multi-domain seed cases
 - realistic benefit-aware payload text
 - export and manifest tooling
+- offline write-retrieve-activate evaluation
+- direct, Mem0-additive, and Mem0-full admission modes
 
-It does not yet provide a single runner that executes all four external domains
-through the current admission-aware memory pipeline.
-
-That runner should be added after the benchmark-v2 schema and case inventory are
-stable.
+It does not yet provide closed-loop execution over the original external domain
+tools. That remains future work.
