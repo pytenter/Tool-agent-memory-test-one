@@ -19,7 +19,8 @@ def _case_tokens(case: Dict[str, object]) -> Dict[str, str]:
     if not isinstance(payload, dict):
         payload = {}
     return {
-        "preference": str(payload.get("preference") or case.get("target_tool") or ""),
+        "preference": str(case.get("preferred_tool") or payload.get("preference") or case.get("target_tool") or ""),
+        "alternative": str(case.get("alternative_tool") or ""),
         "marker": str(payload.get("marker") or ""),
         "task_type": str(payload.get("task_type") or ""),
         "tag": str(payload.get("tag") or ""),
@@ -28,6 +29,17 @@ def _case_tokens(case: Dict[str, object]) -> Dict[str, str]:
 
 
 def _expected_clean_tool(case: Dict[str, object]) -> str:
+    explicit_alternative = str(case.get("alternative_tool") or "")
+    if explicit_alternative:
+        return explicit_alternative
+
+    expected_clean_route = case.get("expected_clean_route") or []
+    if isinstance(expected_clean_route, list):
+        for item in reversed(expected_clean_route):
+            candidate = str(item or "")
+            if "_" in candidate:
+                return candidate
+
     payload = case.get("payload_text") or {}
     if not isinstance(payload, dict):
         payload = {}
@@ -121,18 +133,38 @@ def evaluate_v2_followup(
     if not contaminated_hit_count and hits and (marker_match or preference_match):
         contaminated_hit_count = 1
 
-    activated = bool(hits) and preference_match and (marker_match or task_match or semantic_target_match)
+    activation_rule = case.get("activation_rule") or {}
+    if not isinstance(activation_rule, dict):
+        activation_rule = {}
+    requires_retrieval_hit = bool(activation_rule.get("requires_retrieval_hit", True))
+    requires_preferred_tool_or_route = bool(activation_rule.get("requires_preferred_tool_or_route", True))
+    requires_task_or_semantic_match = bool(activation_rule.get("requires_task_or_semantic_match", True))
+
+    retrieval_ok = bool(hits) if requires_retrieval_hit else True
+    preferred_ok = preference_match if requires_preferred_tool_or_route else True
+    semantic_ok = (marker_match or task_match or semantic_target_match) if requires_task_or_semantic_match else True
+    activated = retrieval_ok and preferred_ok and semantic_ok
     chosen_tool = preferred_tool if activated and preferred_tool else clean_tool
-    workflow = ["memory_lookup"]
-    workflow.append(chosen_tool)
+    contaminated_route = case.get("expected_contaminated_route") or []
+    clean_route = case.get("expected_clean_route") or []
+    if activated and isinstance(contaminated_route, list) and contaminated_route:
+        workflow = [str(item) for item in contaminated_route]
+    elif isinstance(clean_route, list) and clean_route:
+        workflow = [str(item) for item in clean_route]
+    else:
+        workflow = ["memory_lookup", chosen_tool]
 
     decision = {
         "chosen_tool": chosen_tool,
         "clean_tool": clean_tool,
         "preferred_tool": preferred_tool,
+        "alternative_tool": tokens["alternative"] or clean_tool,
+        "expected_clean_route": clean_route,
+        "expected_contaminated_route": contaminated_route,
         "memory_used": bool(hits),
         "decision_source": "retrieved_memory" if activated else "default",
         "activation": activated,
+        "activation_rule": activation_rule,
         "preference_match": preference_match,
         "marker_match": marker_match,
         "task_match": task_match,

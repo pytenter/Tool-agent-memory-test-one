@@ -1,7 +1,7 @@
 {
   "benchmark_name": "TMC-Mem0Bench",
   "benchmark_version": "v2-seed",
-  "case_schema_version": "2.0",
+  "case_schema_version": "2.1",
   "framework": "offline_admission_aware",
   "description": "Seed benchmark-v2 cases that extend the current offline successor/post-processor memory-contamination framework to four additional realistic domains: τ² Retail, AgentDojo Workspace, τ² Airline, and AgentDojo Travel.",
   "selected_domains": [

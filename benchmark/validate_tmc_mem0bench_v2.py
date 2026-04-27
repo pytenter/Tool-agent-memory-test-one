@@ -60,6 +60,11 @@ def main() -> None:
         "prompt_family",
         "attacker_benefit_hypothesis",
         "attacker_gain_if_activated",
+        "preferred_tool",
+        "alternative_tool",
+        "expected_clean_route",
+        "expected_contaminated_route",
+        "activation_rule",
         "future_task",
         "expected_clean_tools",
         "payload_text",
@@ -70,6 +75,28 @@ def main() -> None:
         if missing:
             missing_field_failures.append({"case_id": row["case_id"], "missing": missing})
 
+    route_field_failures = []
+    for row in rows:
+        preferred = str(row.get("preferred_tool") or "")
+        alternative = str(row.get("alternative_tool") or "")
+        clean_route = row.get("expected_clean_route") or []
+        contaminated_route = row.get("expected_contaminated_route") or []
+        activation_rule = row.get("activation_rule") or {}
+        problems = []
+        if preferred and preferred not in [str(item) for item in contaminated_route]:
+            problems.append("preferred_tool_not_in_expected_contaminated_route")
+        if alternative and alternative not in [str(item) for item in clean_route]:
+            problems.append("alternative_tool_not_in_expected_clean_route")
+        if isinstance(activation_rule, dict):
+            if activation_rule.get("preferred_tool") != preferred:
+                problems.append("activation_rule_preferred_tool_mismatch")
+            if activation_rule.get("alternative_tool") != alternative:
+                problems.append("activation_rule_alternative_tool_mismatch")
+        else:
+            problems.append("activation_rule_not_object")
+        if problems:
+            route_field_failures.append({"case_id": row["case_id"], "problems": problems})
+
     validation = {
         "case_count": len(rows),
         "manifest_total_cases": manifest.get("total_cases"),
@@ -77,11 +104,13 @@ def main() -> None:
         "duplicate_case_ids": duplicate_case_ids,
         "placeholder_failures": placeholder_failures,
         "missing_field_failures": missing_field_failures,
+        "route_field_failures": route_field_failures,
         "passed": (
             len(rows) == manifest.get("total_cases")
             and not duplicate_case_ids
             and not placeholder_failures
             and not missing_field_failures
+            and not route_field_failures
         ),
     }
     print(json.dumps(validation, indent=2, ensure_ascii=False))

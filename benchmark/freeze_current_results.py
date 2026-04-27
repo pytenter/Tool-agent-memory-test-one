@@ -73,6 +73,14 @@ FROZEN_ARTIFACTS = [
         "admission_mode": "mem0_additive",
     },
     {
+        "artifact_id": "tmc_mem0bench_v2_full_mem0_additive",
+        "phase": "phase1_v2_mem0_additive_full",
+        "path": "output/benchmark_v2_runs/full_mem0_additive_chord311_clean_v21/summary.json",
+        "description": "Full 60-case v2 Mem0-additive result using explicit v2.1 route and activation schema.",
+        "retrieval_mode": "token",
+        "admission_mode": "mem0_additive",
+    },
+    {
         "artifact_id": "phase0_mem0_additive_microscope",
         "phase": "phase0_admission_microscope",
         "path": "output/phase0/mem0_additive_full_chord311_clean/admission_microscope_summary.json",
@@ -293,7 +301,7 @@ def _write_report(summary: Dict[str, object], rows: List[Dict[str, object]]) -> 
             "- Direct memory write remains the clean upper bound for memory contamination.",
             "- Existing Mem0-style admission results show rewrite/preservation behavior rather than a pure block decision.",
             "- The v2 runner now has a full 60-case direct-write offline smoke result.",
-            "- Small v2 Mem0-additive runs now show write, retrieval, and activation over realistic-domain payloads.",
+            "- The full 60-case v2 Mem0-additive run now shows write, retrieval, and activation over realistic-domain payloads.",
             "",
             "## Boundary",
             "",
@@ -326,7 +334,7 @@ Generated at UTC: `{summary['generated_at_utc']}`
 ## Evaluation
 
 - The current v2 direct run uses a deterministic local follow-up evaluator.
-- The current v2 Mem0-additive frozen runs are small smoke/expansion runs, not yet a full 60-case result.
+- The current v2 Mem0-additive full run uses deterministic local follow-up evaluation and token retrieval.
 - Closed-loop agent execution over real domain tools is not yet part of the v2 frozen result.
 - Some v2 clean-vs-preferred route comparisons are inferred from payload text until the schema exposes explicit route fields.
 

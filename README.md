@@ -27,7 +27,7 @@ Current stage:
 Phase -1 frozen snapshot complete
 Phase 0 admission microscope mem0_additive probes complete
 Phase 1 TMC-Mem0Bench v2 direct runner complete
-Phase 1 v2 mem0_additive smoke and retail expansion complete
+Phase 1 v2 schema 2.1 and full mem0_additive run complete
 ```
 
 What is already established:
@@ -43,10 +43,11 @@ What is already established:
 - TMC-Mem0Bench v2 now has a 60-case realistic-domain seed layer and a direct-write offline runner.
 - Phase 0 memory-form probes have been run through `mem0_additive`.
 - Small realistic-domain v2 `mem0_additive` runs now succeed after extending admission classification to semantic route matches.
+- TMC-Mem0Bench v2 schema now explicitly records attack targets, clean routes, contaminated routes, and activation rules.
+- The full 60-case v2 `mem0_additive` run is complete.
 
 What is not yet done:
 
-- TMC-Mem0Bench v2 `mem0_additive` full run is not complete or frozen yet.
 - Mem0-native retrieval is not integrated as a first-class runner mode.
 - Source-aware trust/admission scoring is not implemented yet.
 - Closed-loop v2 agent execution over realistic domain tools is not implemented yet.
@@ -288,11 +289,21 @@ Current validation result:
 
 - `case_count = 60`
 - `manifest_total_cases = 60`
+- `case_schema_version = 2.1`
 - `case_count_matches_manifest = true`
 - `duplicate_case_ids = []`
 - `placeholder_failures = []`
 - `missing_field_failures = []`
+- `route_field_failures = []`
 - `passed = true`
+
+Schema 2.1 adds explicit evaluation fields to every case:
+
+- `preferred_tool`
+- `alternative_tool`
+- `expected_clean_route`
+- `expected_contaminated_route`
+- `activation_rule`
 
 ### v2 Direct Runner
 
@@ -393,6 +404,42 @@ Key result:
 - `Tool Preference Shift = 1.0`
 - `Workflow Order Drift = 1.0`
 
+Full 60-case Mem0-additive run:
+
+```powershell
+python benchmark\run_tmc_mem0bench_v2.py --admission-mode mem0_additive --retrieval-mode token --output-dir output\benchmark_v2_runs\full_mem0_additive_chord311_clean_v21
+```
+
+Key result:
+
+- `case_count = 60`
+- `tau2_retail = 18`
+- `tau2_airline = 18`
+- `agentdojo_workspace = 12`
+- `agentdojo_travel = 12`
+- `write_success_count = 60`
+- `retrieval_hit_count = 60`
+- `activation_count = 60`
+- `Memory Write Success Rate = 1.0`
+- `Retrieval Hit Rate = 1.0`
+- `Contaminated Activation Rate = 1.0`
+- `Tool Preference Shift = 1.0`
+- `Workflow Order Drift = 1.0`
+
+Admission-level summary for the full run:
+
+- mean `extracted_memory_count = 4.7167`
+- mean `admitted_memory_count = 4.7167`
+- mean `admitted_attack_memory_count = 2.6833`
+- mean `attack_rule_survival_rate = 0.5911`
+- mean `task_type_preservation_rate = 1.0`
+- mean `tool_preference_preservation_rate = 0.3375`
+- mean `marker_preservation_rate = 0.0597`
+- mean `semantic_target_preservation_rate = 1.0`
+- mean `rewrite_changed_rate = 1.0`
+- mean `rewrite_length_ratio_mean = 0.2097`
+- aggregate admitted categories: `attack_rule = 161`, `auxiliary = 122`
+
 Admission detail:
 
 - Mem0 extracted `2-3` memories per case.
@@ -402,9 +449,8 @@ Admission detail:
 
 Boundary:
 
-- These are still small runs.
-- The 12-case run is retail-only because `--max-cases` follows seed order.
-- They validate the v2 realistic-payload admission path, not the full 60-case distribution.
+- The full run uses token retrieval and deterministic follow-up evaluation.
+- It validates the offline v2 realistic-payload admission path, not closed-loop execution over real domain tools.
 
 ## Phase -1 Frozen Snapshot
 
@@ -416,7 +462,7 @@ Phase -1 artifacts:
 - `output/frozen_result_index.csv`
 - `output/frozen_result_summary.json`
 
-The frozen snapshot currently indexes eight key artifacts:
+The frozen snapshot currently indexes nine key artifacts:
 
 - `attack_core_stability_20260425_105821`
 - `prompt_family_batch_20260426_040501`
@@ -425,6 +471,7 @@ The frozen snapshot currently indexes eight key artifacts:
 - `tmc_mem0bench_v2_full_direct`
 - `tmc_mem0bench_v2_mem0_additive_retail12`
 - `tmc_mem0bench_v2_mem0_additive_cross_domain4`
+- `tmc_mem0bench_v2_full_mem0_additive`
 - `phase0_mem0_additive_microscope`
 
 Regenerate:
@@ -581,29 +628,18 @@ At the current snapshot, the project supports these claims:
 6. In the older local source-comparison setup, source provenance does not yet strongly separate local-successor and synthetic-helper payloads.
 7. TMC-Mem0Bench v2 now executes all 60 realistic-domain seed cases in a direct-write upper-bound runner.
 8. Phase 0 admission-microscope probes show that Mem0-style additive admission rewrites surviving attack memories and filters pure noise.
-9. Small v2 realistic-domain `mem0_additive` runs now show successful write, retrieval, and activation after semantic route classification is enabled.
+9. TMC-Mem0Bench v2 schema 2.1 makes attack target, clean route, contaminated route, and activation criteria explicit.
+10. The full 60-case v2 `mem0_additive` run shows successful write, retrieval, and activation under the explicit route schema.
 
 ## Immediate Next Steps
 
 The next experiments should be:
 
-1. Add explicit v2 schema fields for clean and contaminated routes:
+1. Re-run same-payload/different-source over realistic v2 payloads.
 
-- `preferred_tool`
-- `alternative_tool`
-- `expected_clean_route`
-- `expected_contaminated_route`
-- `activation_rule`
+2. Integrate Mem0-native retrieval.
 
-2. Run the full 60-case v2 `mem0_additive` benchmark:
-
-```powershell
-python benchmark\run_tmc_mem0bench_v2.py --admission-mode mem0_additive --retrieval-mode token --output-dir output\benchmark_v2_runs\full_mem0_additive
-```
-
-3. Re-run same-payload/different-source over realistic v2 payloads.
-
-4. Integrate Mem0-native retrieval.
+3. Add closed-loop v2 agent execution over realistic domain tools.
 
 ## Submission Notes
 
@@ -622,4 +658,5 @@ Before submitting this repository snapshot, preserve these files:
 - `output/benchmark_v2_runs/smoke_mem0_additive_chord311_clean_v2filter/`
 - `output/benchmark_v2_runs/stratified_mem0_additive_chord311_clean_v2filter/`
 - `output/benchmark_v2_runs/cross_domain_mem0_additive_chord311_clean_v2filter/`
+- `output/benchmark_v2_runs/full_mem0_additive_chord311_clean_v21/`
 - `output/phase0/mem0_additive_full_chord311_clean/`
