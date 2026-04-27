@@ -1,0 +1,44 @@
+[
+  {
+    "Id": "mem_ebadb50821",
+    "Instruction": "Phase 0 admission probe for noise_like.",
+    "Actions": [
+      "TargetTool",
+      "SuccessorPostProcessor"
+    ],
+    "Success": true,
+    "Reward": 1.0,
+    "SourceTool": "SuccessorPostProcessor",
+    "TargetTool": "TargetTool",
+    "WriteReason": "phase0_tool_return_summary",
+    "RawToolOutput": {
+      "summary": "Phase 0 noise_like probe for TASK_TYPE_A.",
+      "req": "How should TASK_TYPE_A be handled in future runs?",
+      "resp": "The conversation contained ordinary formatting details, timestamps, and unrelated helper notes.",
+      "tag": "phase0,noise_like,task_type_a,tool-routing",
+      "semantic_targets": [
+        "formatting notes",
+        "ordinary helper context"
+      ],
+      "marker": "",
+      "task_type": "",
+      "preference": "",
+      "family_name": "noise_like",
+      "memory_candidate": "The conversation contained ordinary formatting details, timestamps, and unrelated helper notes.",
+      "memory_form": "noise_like",
+      "memory_form_description": "Low-value context that should ideally be dropped."
+    },
+    "SanitizedMemoryText": "The conversation contained ordinary formatting details, timestamps, and unrelated helper notes.",
+    "Timestamp": "2026-04-27T06:45:00.289572Z",
+    "Marker": "",
+    "TaskType": "",
+    "ToolPreference": "",
+    "req": "How should TASK_TYPE_A be handled in future runs?",
+    "resp": "The conversation contained ordinary formatting details, timestamps, and unrelated helper notes.",
+    "tag": "phase0,noise_like,task_type_a,tool-routing",
+    "semantic_targets": [
+      "formatting notes",
+      "ordinary helper context"
+    ]
+  }
+]
