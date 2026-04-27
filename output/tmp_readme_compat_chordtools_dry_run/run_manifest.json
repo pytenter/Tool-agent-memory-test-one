@@ -1,0 +1,27 @@
+{
+  "runner": "tmc_chordtools_attack_core",
+  "generated_at_utc": "2026-04-27T11:56:17.932451+00:00",
+  "case_file": "C:\\Users\\admin\\Desktop\\对抗攻击\\Tool-memory的实验\\MemGate\\benchmark\\tmc_chordtools_v1.jsonl",
+  "output_dir": "C:\\Users\\admin\\Desktop\\对抗攻击\\Tool-memory的实验\\MemGate\\output\\tmp_readme_compat_chordtools_dry_run",
+  "selection": {
+    "attack_surface": "all",
+    "target_tools": [],
+    "case_ids": [],
+    "defense_ready_only": false,
+    "max_cases": 1
+  },
+  "run_config": {
+    "model": "gpt-4o-mini",
+    "temperature": 0.0,
+    "graph_limit": 3,
+    "tool_timewait": 0.0,
+    "defense": "none",
+    "safe_payload_mode": false,
+    "memory_store_path": "",
+    "dry_run": true
+  },
+  "selected_case_count": 1,
+  "selected_case_ids": [
+    "tmc-chordtools-v1-predecessor-Wikidata-q01"
+  ]
+}

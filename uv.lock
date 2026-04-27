@@ -488,7 +488,7 @@ wheels = [
 ]
 
 [[package]]
-name = "chord-ndss-artifact"
+name = "memgate"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

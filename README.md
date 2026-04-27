@@ -17,7 +17,28 @@ tool return / successor post-processor output
 Compatibility note:
 
 - The project name is `MemGate`.
-- The internal Python package path remains `chord/` for compatibility with the original ChordTools code and experiment scripts.
+- New code can import the public `memgate/` namespace.
+- The legacy internal `chord/` package remains available as a compatibility layer for original ChordTools code and historical experiment scripts.
+
+## Naming and Compatibility
+
+This artifact is released as **MemGate**.
+
+The repository was developed from an earlier ChordTools codebase. To keep the frozen experiments reproducible, the legacy `chord/` Python package and historical `TMC-ChordTools` benchmark names are intentionally preserved where they identify old baselines, case IDs, or scripts.
+
+For new code, prefer:
+
+```python
+from memgate.model_provider import create_chat_openai
+```
+
+The following legacy import remains supported:
+
+```python
+from chord.model_provider import create_chat_openai
+```
+
+This compatibility layer is intentional. It prevents renaming churn from invalidating frozen result paths, benchmark case IDs, and historical experiment scripts.
 
 ## Current Status
 
@@ -54,7 +75,7 @@ What is not yet done:
 - Mem0-native retrieval is not integrated as a first-class runner mode.
 - Source-aware trust/admission scoring is not implemented yet.
 - Closed-loop v2 agent execution over realistic domain tools is not implemented yet.
-- ChordTools v1 is not yet merged into the v2 runner schema.
+- ChordTools v1 remains a legacy baseline and is not merged into the v2 runner schema.
 
 ## Repository Structure
 
@@ -63,7 +84,9 @@ What is not yet done:
 - `bridge/`
   - Memory writing, Mem0-style admission adapter, retrieval adapter, and trigger evaluation.
 - `chord/`
-  - Original ChordTools/MemGate agent logic and testing agents.
+  - Legacy compatibility package retained for original ChordTools-era agent logic and historical scripts.
+- `memgate/`
+  - Public MemGate import namespace that forwards to the legacy implementation where needed.
 - `data/`
   - Tool maps, queries, malicious tool definitions, and benchmark resources.
 - `demo/`
@@ -86,6 +109,14 @@ Install:
 ```powershell
 pip install -e .
 ```
+
+If editable installation is unreliable on Windows because the repository path contains non-ASCII characters, use a normal local install instead:
+
+```powershell
+pip install . --no-deps
+```
+
+All experiment commands are also expected to work when run from the repository root, because the scripts add the project root to `sys.path`.
 
 The `.env` file should provide an OpenAI-compatible endpoint:
 
@@ -642,9 +673,9 @@ Current primary entry points:
 - `benchmark/run_tmc_mem0bench_v2.py`
   - Run v2 seed cases through write, retrieval, and deterministic follow-up evaluation.
 - `benchmark/run_memory_seed_case.py`
-  - Single memory-seed experiment with `direct` or `mem0_additive`.
+  - Single memory-seed experiment with `direct`, `mem0_additive`, or `mem0_full`.
 - `benchmark/run_prompt_family_batch.py`
-  - Batch prompt-family comparison across `direct` and `mem0_additive`.
+  - Batch prompt-family comparison across supported admission modes.
 - `benchmark/run_update_conflict_experiment.py`
   - Benign default plus malicious update conflict experiment.
 - `benchmark/run_same_payload_source_compare.py`
@@ -727,7 +758,7 @@ At the current snapshot, the project supports these claims:
 8. Phase 0 admission-microscope probes show that Mem0-style additive admission rewrites surviving attack memories and filters pure noise.
 9. TMC-Mem0Bench v2 schema 2.1 makes attack target, clean route, contaminated route, and activation criteria explicit.
 10. The full 60-case v2 `mem0_additive` run shows successful write, retrieval, and activation under the explicit route schema.
-11. The 4-case v2 `mem0_full --seed-clean-memory` smoke shows clean-route memories and malicious memories coexisting in the same store, with no clean seed overwritten or deleted.
+11. The full 60-case v2 `mem0_full --seed-clean-memory` run shows clean-route memories and malicious memories coexisting in the same store, with no clean seed overwritten or deleted.
 
 ## Immediate Next Steps
 
@@ -742,6 +773,14 @@ The next experiments should be:
 4. Add closed-loop v2 agent execution over realistic domain tools.
 
 ## Submission Notes
+
+Artifact naming note:
+
+- The artifact is released as `MemGate`.
+- The Python project package name in `pyproject.toml` is `memgate`.
+- The public namespace for new code is `memgate/`.
+- The legacy `chord/` namespace is retained only for backward compatibility with inherited scripts and frozen experiments.
+- Historical names such as `TMC-ChordTools v1`, `tmc-chordtools-*` case IDs, and `tmc_chordtools_*` files are preserved intentionally so old results remain traceable and reproducible.
 
 Before submitting this repository snapshot, preserve these files:
 

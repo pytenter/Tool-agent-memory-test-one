@@ -1,5 +1,5 @@
 def main():
-    print("Hello from chord-ndss-artifact!")
+    print("Hello from MemGate!")
 
 
 if __name__ == "__main__":
